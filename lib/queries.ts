@@ -1,0 +1,99 @@
+// サーバー側のデータ取得・集計（RLS により自動的に自分のデータのみ対象）
+import { createClient } from '@/lib/supabase/server';
+import { lastNMonths, monthRange } from '@/lib/format';
+import {
+  aggregateCategoryBreakdown,
+  aggregateMonthlyBars,
+  summarize,
+  type CategoryRow,
+} from '@/lib/summary';
+import type {
+  Category,
+  CategorySlice,
+  MonthlyBar,
+  MonthlySummary,
+  TransactionWithCategory,
+  TxType,
+} from '@/lib/types';
+
+// 表示可能なカテゴリ一覧（共通＋自分定義）。type, sort_order 順。
+export async function getCategories(): Promise<Category[]> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from('categories')
+    .select('*')
+    .order('type', { ascending: true })
+    .order('sort_order', { ascending: true });
+  if (error) throw error;
+  return (data ?? []) as Category[];
+}
+
+// 指定月の取引（日付降順）。カテゴリ情報を結合。
+export async function getTransactionsForMonth(
+  month: string
+): Promise<TransactionWithCategory[]> {
+  const supabase = await createClient();
+  const { start, end } = monthRange(month);
+  const { data, error } = await supabase
+    .from('transactions')
+    .select('*, category:categories(id, name, icon, type)')
+    .gte('date', start)
+    .lt('date', end)
+    .order('date', { ascending: false })
+    .order('created_at', { ascending: false });
+  if (error) throw error;
+  return (data ?? []) as unknown as TransactionWithCategory[];
+}
+
+// 月次サマリー（収入 / 支出 / 収支 / 貯蓄率）
+export async function getMonthlySummary(
+  month: string
+): Promise<MonthlySummary> {
+  const supabase = await createClient();
+  const { start, end } = monthRange(month);
+  const { data, error } = await supabase
+    .from('transactions')
+    .select('type, amount')
+    .gte('date', start)
+    .lt('date', end);
+  if (error) throw error;
+  return summarize(data ?? []);
+}
+
+// 直近6ヶ月の月別収支（棒グラフ用、古い順）
+export async function getMonthlyBars(
+  baseMonth: string,
+  n = 6
+): Promise<MonthlyBar[]> {
+  const supabase = await createClient();
+  const months = lastNMonths(baseMonth, n);
+  const { start } = monthRange(months[0]);
+  const { end } = monthRange(months[months.length - 1]);
+
+  const { data, error } = await supabase
+    .from('transactions')
+    .select('date, type, amount')
+    .gte('date', start)
+    .lt('date', end);
+  if (error) throw error;
+
+  return aggregateMonthlyBars(data ?? [], months);
+}
+
+// カテゴリ別内訳（円グラフ用）。選択月・指定 type の合計を金額降順で。
+export async function getCategoryBreakdown(
+  month: string,
+  type: TxType
+): Promise<CategorySlice[]> {
+  const supabase = await createClient();
+  const { start, end } = monthRange(month);
+  const { data, error } = await supabase
+    .from('transactions')
+    .select('amount, category:categories(id, name, icon)')
+    .eq('type', type)
+    .gte('date', start)
+    .lt('date', end);
+  if (error) throw error;
+
+  return aggregateCategoryBreakdown((data ?? []) as unknown as CategoryRow[]);
+}

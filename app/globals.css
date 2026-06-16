@@ -1,26 +1,43 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
+/* Pico Money デザイントークン
+   ミニマル・モバイルファースト。基準幅 480px。 */
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-bg: #f4f5f7;
+  --color-surface: #ffffff;
+  --color-ink: #1a1d21;
+  --color-muted: #8b9099;
+  --color-line: #eceef1;
+
+  --color-brand: #2f6df6;
+  --color-income: #16a34a;
+  --color-expense: #e1483a;
+
+  --font-sans: var(--font-geist-sans), system-ui, -apple-system, "Hiragino Kaku Gothic ProN", "Yu Gothic", sans-serif;
+
+  --radius-card: 18px;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html {
+  height: 100%;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--color-bg);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  /* iOS セーフエリア + 下部ナビ/FAB のための余白はレイアウト側で確保 */
+  -webkit-font-smoothing: antialiased;
+  overscroll-behavior-y: none;
+}
+
+/* 数値の桁揃え */
+.tabular {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum";
+}
+
+/* タップ時の青いハイライトを抑制 */
+* {
+  -webkit-tap-highlight-color: transparent;
 }
