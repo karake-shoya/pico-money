@@ -11,6 +11,7 @@ import {
 import { categoryColor, categoryIcon } from "@/lib/category-icon";
 import { todayDate } from "@/lib/format";
 import type { Category, TransactionWithCategory, TxType } from "@/lib/types";
+import { Calculator } from "./Calculator";
 
 type Props = {
   categories: Category[];
@@ -37,6 +38,8 @@ export function TransactionForm({ categories, initial, onDone }: Props) {
   const [categoryId, setCategoryId] = useState<string>(
     initial?.category_id ?? ""
   );
+  const [amount, setAmount] = useState<number>(initial?.amount ?? 0);
+  const [calcOpen, setCalcOpen] = useState(false);
 
   // 選択中の type に応じてカテゴリを絞り込み
   const visible = useMemo(
@@ -82,53 +85,66 @@ export function TransactionForm({ categories, initial, onDone }: Props) {
 
   return (
     <form action={formAction} className="space-y-5">
-      {/* 収入/支出トグル */}
+      {/* 収入/支出タブ（タップで切替） */}
       <input type="hidden" name="type" value={type} />
-      <div className="grid grid-cols-2 gap-2 rounded-xl bg-[var(--color-bg)] p-1">
-        <button
-          type="button"
-          onClick={() => changeType("expense")}
-          className={`h-11 rounded-lg text-sm font-semibold transition ${
-            type === "expense"
-              ? "bg-[var(--color-expense)] text-white"
-              : "text-[var(--color-muted)]"
-          }`}
-        >
-          支出
-        </button>
-        <button
-          type="button"
-          onClick={() => changeType("income")}
-          className={`h-11 rounded-lg text-sm font-semibold transition ${
-            type === "income"
-              ? "bg-[var(--color-income)] text-white"
-              : "text-[var(--color-muted)]"
-          }`}
-        >
-          収入
-        </button>
+      <div className="-mx-5 -mt-1 grid grid-cols-2 border-b border-[var(--color-line)]">
+        {(["expense", "income"] as const).map((t) => {
+          const active = type === t;
+          const activeColor =
+            t === "expense" ? "var(--color-expense)" : "var(--color-income)";
+          return (
+            <button
+              key={t}
+              type="button"
+              onClick={() => changeType(t)}
+              className="relative h-12 text-sm font-semibold transition"
+              style={{
+                color: active ? activeColor : "var(--color-muted)",
+              }}
+            >
+              {t === "expense" ? "支出" : "収入"}
+              {/* アクティブ下線インジケータ */}
+              <span
+                className="absolute inset-x-0 -bottom-px h-0.5 rounded-full"
+                style={{ background: active ? activeColor : "transparent" }}
+              />
+            </button>
+          );
+        })}
       </div>
 
-      {/* 金額 */}
-      <label className="block">
+      {/* 金額（タップで電卓を表示） */}
+      <div>
         <span className="mb-1 block text-sm text-[var(--color-muted)]">
           金額（円）
         </span>
-        <div className="flex items-center rounded-xl border border-[var(--color-line)] bg-[var(--color-bg)] px-4">
+        <input type="hidden" name="amount" value={amount > 0 ? amount : ""} />
+        <button
+          type="button"
+          onClick={() => setCalcOpen(true)}
+          className="flex h-12 w-full items-center rounded-xl border border-[var(--color-line)] bg-[var(--color-bg)] px-4 text-left transition active:scale-[0.99]"
+        >
           <span className="mr-1 text-lg text-[var(--color-muted)]">¥</span>
-          <input
-            type="number"
-            name="amount"
-            required
-            min={1}
-            step={1}
-            inputMode="numeric"
-            defaultValue={initial?.amount ?? ""}
-            placeholder="0"
-            className="tabular h-12 w-full bg-transparent text-right text-xl font-semibold outline-none"
-          />
-        </div>
-      </label>
+          <span
+            className={`tabular w-full text-right text-xl font-semibold ${
+              amount > 0 ? "text-[var(--color-ink)]" : "text-[var(--color-muted)]"
+            }`}
+          >
+            {amount > 0 ? amount.toLocaleString("ja-JP") : "0"}
+          </span>
+        </button>
+      </div>
+
+      {calcOpen && (
+        <Calculator
+          initial={amount}
+          onConfirm={(value) => {
+            setAmount(value);
+            setCalcOpen(false);
+          }}
+          onClose={() => setCalcOpen(false)}
+        />
+      )}
 
       {/* 日付 */}
       <label className="block">

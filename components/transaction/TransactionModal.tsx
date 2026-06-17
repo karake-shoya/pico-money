@@ -68,8 +68,8 @@ export function TransactionModalProvider({
     <ModalContext.Provider value={{ openNew, openEdit }}>
       {children}
 
-      {/* FAB（下部固定の + ボタン）。下部ナビの上・中央に配置し片手操作しやすくする。 */}
-      <div className="pointer-events-none fixed inset-x-0 bottom-[calc(76px+env(safe-area-inset-bottom))] z-30 flex justify-center">
+      {/* FAB（下部固定の + ボタン）。下部ナビの上・右端に配置し片手操作しやすくする。 */}
+      <div className="pointer-events-none fixed inset-x-0 bottom-[calc(76px+env(safe-area-inset-bottom))] z-30 mx-auto flex max-w-[480px] justify-end px-4">
         <button
           type="button"
           onClick={openNew}
