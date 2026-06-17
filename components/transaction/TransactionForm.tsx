@@ -8,7 +8,7 @@ import {
   updateTransaction,
   type TxFormState,
 } from "@/lib/actions/transactions";
-import { categoryIcon } from "@/lib/category-icon";
+import { categoryColor, categoryIcon } from "@/lib/category-icon";
 import { todayDate } from "@/lib/format";
 import type { Category, TransactionWithCategory, TxType } from "@/lib/types";
 
@@ -166,7 +166,11 @@ export function TransactionForm({ categories, initial, onDone }: Props) {
                   : "border-[var(--color-line)] bg-[var(--color-surface)] text-[var(--color-ink)]"
               }`}
             >
-              <Icon className="h-5 w-5" strokeWidth={1.8} />
+              <Icon
+                className="h-5 w-5"
+                strokeWidth={1.8}
+                style={selected ? undefined : { color: categoryColor(c.name) }}
+              />
               <span className="leading-tight">{c.name}</span>
             </button>
             );
