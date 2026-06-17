@@ -41,6 +41,13 @@ export function monthRange(month: string): { start: string; end: string } {
   return { start, end };
 }
 
+// 指定月を delta ヶ月ずらした YYYY-MM を返す（負値で過去方向）。
+export function shiftMonth(month: string, delta: number): string {
+  const [y, m] = month.split('-').map(Number);
+  const d = new Date(y, m - 1 + delta, 1);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+}
+
 // 直近 n ヶ月分の YYYY-MM 配列（古い順）。基準月を含む。
 export function lastNMonths(baseMonth: string, n: number): string[] {
   const [y, m] = baseMonth.split('-').map(Number);

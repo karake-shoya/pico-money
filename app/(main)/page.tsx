@@ -1,5 +1,6 @@
+import { MonthSwipe } from "@/components/MonthSwipe";
 import { getMonthlySummary } from "@/lib/queries";
-import { formatSignedYen, formatYen, monthLabel, normalizeMonth } from "@/lib/format";
+import { formatSignedYen, formatYen, normalizeMonth } from "@/lib/format";
 
 // ホーム（収支サマリー）。Next.js 16 では searchParams は Promise。
 export default async function HomePage({
@@ -19,10 +20,9 @@ export default async function HomePage({
   const over = expense > income; // 支出超過
 
   return (
-    <div className="space-y-4">
-      <p className="text-sm text-[var(--color-muted)]">{monthLabel(month)}の収支</p>
-
-      {/* 収支バランス（大きく表示） */}
+    <MonthSwipe month={month}>
+      <div className="space-y-4">
+        {/* 収支バランス（大きく表示） */}
       <section className="rounded-[var(--radius-card)] bg-[var(--color-surface)] p-5 shadow-sm">
         <p className="text-sm text-[var(--color-muted)]">差額</p>
         <p
@@ -87,6 +87,7 @@ export default async function HomePage({
           {savingsRate}%
         </p>
       </section>
-    </div>
+      </div>
+    </MonthSwipe>
   );
 }

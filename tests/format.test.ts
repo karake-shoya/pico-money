@@ -7,6 +7,7 @@ import {
   monthLabel,
   monthRange,
   normalizeMonth,
+  shiftMonth,
   shortMonthLabel,
 } from "@/lib/format";
 
@@ -66,6 +67,20 @@ describe("monthRange", () => {
       start: "2026-01-01",
       end: "2026-02-01",
     });
+  });
+});
+
+describe("shiftMonth", () => {
+  it("翌月・前月へ移動する", () => {
+    expect(shiftMonth("2026-06", 1)).toBe("2026-07");
+    expect(shiftMonth("2026-06", -1)).toBe("2026-05");
+  });
+  it("年をまたぐ", () => {
+    expect(shiftMonth("2026-12", 1)).toBe("2027-01");
+    expect(shiftMonth("2026-01", -1)).toBe("2025-12");
+  });
+  it("複数月のずらしも可能", () => {
+    expect(shiftMonth("2026-06", -6)).toBe("2025-12");
   });
 });
 
