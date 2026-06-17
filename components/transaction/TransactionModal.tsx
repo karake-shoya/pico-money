@@ -9,6 +9,7 @@ import {
   type ReactNode,
 } from "react";
 import { useRouter } from "next/navigation";
+import { Plus, X } from "lucide-react";
 import { TransactionForm } from "./TransactionForm";
 import type { Category, TransactionWithCategory } from "@/lib/types";
 
@@ -73,9 +74,9 @@ export function TransactionModalProvider({
           type="button"
           onClick={openNew}
           aria-label="取引を登録"
-          className="pointer-events-auto flex h-14 w-14 items-center justify-center rounded-full bg-[var(--color-brand)] pb-1 text-3xl leading-none text-white shadow-lg transition active:scale-95"
+          className="pointer-events-auto flex h-14 w-14 items-center justify-center rounded-full bg-[var(--color-brand)] text-white shadow-lg shadow-[var(--color-brand)]/30 transition active:scale-95"
         >
-          +
+          <Plus className="h-7 w-7" strokeWidth={2.4} />
         </button>
       </div>
 
@@ -98,9 +99,10 @@ export function TransactionModalProvider({
                 <button
                   type="button"
                   onClick={close}
-                  className="text-sm text-[var(--color-muted)]"
+                  aria-label="閉じる"
+                  className="flex h-8 w-8 items-center justify-center rounded-full text-[var(--color-muted)] active:bg-[var(--color-bg)]"
                 >
-                  閉じる
+                  <X className="h-5 w-5" />
                 </button>
               </div>
             </div>

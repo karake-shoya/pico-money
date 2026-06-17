@@ -12,15 +12,16 @@ import {
   Tooltip,
   XAxis,
 } from "recharts";
+import { categoryIcon } from "@/lib/category-icon";
 import { formatYen, shortMonthLabel } from "@/lib/format";
 import type { CategorySlice, MonthlyBar, TxType } from "@/lib/types";
 
-const INCOME = "#16a34a";
-const EXPENSE = "#e1483a";
+const INCOME = "#059669";
+const EXPENSE = "#e11d48";
 
 // 円グラフ用のカラーパレット
 const PIE_COLORS = [
-  "#2f6df6",
+  "#4f46e5",
   "#f59e0b",
   "#10b981",
   "#ef4444",
@@ -61,7 +62,7 @@ export function Charts({ month, bars, expenseSlices, incomeSlices }: Props) {
   return (
     <div className="space-y-4">
       {/* 月別収支棒グラフ（過去6ヶ月） */}
-      <section className="rounded-[var(--radius-card)] bg-[var(--color-surface)] p-4 shadow-sm">
+      <section className="rounded-[var(--radius-card)] border border-[var(--color-line)] bg-[var(--color-surface)] p-4">
         <h2 className="mb-1 font-bold">月別収支</h2>
         <p className="mb-3 text-xs text-[var(--color-muted)]">過去6ヶ月</p>
         <div className="h-56 w-full">
@@ -101,7 +102,7 @@ export function Charts({ month, bars, expenseSlices, incomeSlices }: Props) {
       </section>
 
       {/* カテゴリ別ドーナツ */}
-      <section className="rounded-[var(--radius-card)] bg-[var(--color-surface)] p-4 shadow-sm">
+      <section className="rounded-[var(--radius-card)] border border-[var(--color-line)] bg-[var(--color-surface)] p-4">
         <div className="mb-3 flex items-center justify-between">
           <h2 className="font-bold">カテゴリ別</h2>
           {/* 収入/支出 切替 */}
@@ -159,19 +160,23 @@ export function Charts({ month, bars, expenseSlices, incomeSlices }: Props) {
 
             {/* カテゴリ別ランキング（金額と割合）。行タップで入出金へドリルダウン。 */}
             <ul className="mt-3 space-y-1">
-              {pieData.map((d, i) => (
+              {pieData.map((d, i) => {
+                const Icon = categoryIcon(d.name);
+                return (
                 <li key={d.categoryId}>
                   <Link
                     href={`/transactions?month=${month}&cat=${d.categoryId}`}
-                    className="flex items-center gap-2 rounded-lg py-1.5 text-sm active:bg-[var(--color-bg)]"
+                    className="flex items-center gap-2.5 rounded-lg py-1.5 text-sm active:bg-[var(--color-bg)]"
                   >
                     <span
-                      className="h-3 w-3 shrink-0 rounded-sm"
+                      className="h-2.5 w-2.5 shrink-0 rounded-full"
                       style={{ background: PIE_COLORS[i % PIE_COLORS.length] }}
                     />
-                    <span className="flex-1 truncate">
-                      {d.icon} {d.name}
-                    </span>
+                    <Icon
+                      className="h-4 w-4 shrink-0 text-[var(--color-muted)]"
+                      strokeWidth={1.8}
+                    />
+                    <span className="flex-1 truncate">{d.name}</span>
                     <span className="tabular text-[var(--color-muted)]">
                       {d.percent}%
                     </span>
@@ -181,7 +186,8 @@ export function Charts({ month, bars, expenseSlices, incomeSlices }: Props) {
                     <span className="text-[var(--color-muted)]">›</span>
                   </Link>
                 </li>
-              ))}
+                );
+              })}
             </ul>
           </>
         )}

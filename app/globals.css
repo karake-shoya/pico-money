@@ -3,19 +3,21 @@
 /* Pico Money デザイントークン
    ミニマル・モバイルファースト。基準幅 480px。 */
 @theme inline {
-  --color-bg: #f4f5f7;
+  /* クリーン・モノトーン：白基調＋極淡グレー、インディゴ単色アクセント */
+  --color-bg: #f6f7f9;
   --color-surface: #ffffff;
-  --color-ink: #1a1d21;
-  --color-muted: #8b9099;
-  --color-line: #eceef1;
+  --color-ink: #0f1115;
+  --color-muted: #6b7280;
+  --color-line: #e8eaed;
 
-  --color-brand: #2f6df6;
-  --color-income: #16a34a;
-  --color-expense: #e1483a;
+  --color-brand: #4f46e5; /* indigo-600 */
+  --color-brand-soft: #eef0fe; /* アクセントの淡色面 */
+  --color-income: #059669; /* emerald-600 */
+  --color-expense: #e11d48; /* rose-600 */
 
   --font-sans: var(--font-geist-sans), system-ui, -apple-system, "Hiragino Kaku Gothic ProN", "Yu Gothic", sans-serif;
 
-  --radius-card: 18px;
+  --radius-card: 20px;
 }
 
 html {

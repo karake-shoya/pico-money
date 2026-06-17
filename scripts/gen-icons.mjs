@@ -7,9 +7,10 @@ import { fileURLToPath } from "node:url";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const publicDir = join(__dirname, "..", "public");
+const appDir = join(__dirname, "..", "app");
 mkdirSync(publicDir, { recursive: true });
 
-const BRAND = [47, 109, 246]; // #2f6df6
+const BRAND = [79, 70, 229]; // #4f46e5 indigo
 const WHITE = [255, 255, 255];
 
 function makeCanvas(size) {
@@ -144,13 +145,14 @@ function encodePNG(c) {
 }
 
 const targets = [
-  { name: "icon-192.png", size: 192, padScale: 0 },
-  { name: "icon-512.png", size: 512, padScale: 0 },
-  { name: "icon-maskable-512.png", size: 512, padScale: 0 },
-  { name: "apple-icon.png", size: 180, padScale: 0 },
+  { name: "icon-192.png", size: 192, padScale: 0, dir: publicDir },
+  { name: "icon-512.png", size: 512, padScale: 0, dir: publicDir },
+  { name: "icon-maskable-512.png", size: 512, padScale: 0, dir: publicDir },
+  // apple-icon は Next の file convention に従い app/ に置く
+  { name: "apple-icon.png", size: 180, padScale: 0, dir: appDir },
 ];
 for (const t of targets) {
   const c = drawIcon(t.size, { padScale: t.padScale });
-  writeFileSync(join(publicDir, t.name), encodePNG(c));
+  writeFileSync(join(t.dir, t.name), encodePNG(c));
   console.log("wrote", t.name);
 }

@@ -19,7 +19,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#2f6df6",
+  themeColor: "#4f46e5",
   width: "device-width",
   initialScale: 1,
   // 拡大を妨げない（アクセシビリティ: WCAG 1.4.4）

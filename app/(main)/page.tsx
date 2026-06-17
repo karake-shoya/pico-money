@@ -1,3 +1,4 @@
+import { ArrowDownLeft, ArrowUpRight, PiggyBank } from "lucide-react";
 import { MonthSwipe } from "@/components/MonthSwipe";
 import { getMonthlySummary } from "@/lib/queries";
 import { formatSignedYen, formatYen, normalizeMonth } from "@/lib/format";
@@ -23,7 +24,7 @@ export default async function HomePage({
     <MonthSwipe month={month}>
       <div className="space-y-4">
         {/* 収支バランス（大きく表示） */}
-      <section className="rounded-[var(--radius-card)] bg-[var(--color-surface)] p-5 shadow-sm">
+      <section className="rounded-[var(--radius-card)] border border-[var(--color-line)] bg-[var(--color-surface)] p-5">
         <p className="text-sm text-[var(--color-muted)]">差額</p>
         <p
           className={`tabular mt-1 text-4xl font-bold ${
@@ -60,23 +61,32 @@ export default async function HomePage({
 
       {/* 収入 / 支出 */}
       <div className="grid grid-cols-2 gap-3">
-        <section className="rounded-[var(--radius-card)] bg-[var(--color-surface)] p-4 shadow-sm">
-          <p className="text-sm text-[var(--color-muted)]">収入</p>
-          <p className="tabular mt-1 text-xl font-bold text-[var(--color-income)]">
+        <section className="rounded-[var(--radius-card)] border border-[var(--color-line)] bg-[var(--color-surface)] p-4">
+          <p className="flex items-center gap-1.5 text-sm text-[var(--color-muted)]">
+            <ArrowDownLeft className="h-4 w-4 text-[var(--color-income)]" />
+            収入
+          </p>
+          <p className="tabular mt-1.5 text-xl font-bold text-[var(--color-income)]">
             {formatYen(income)}
           </p>
         </section>
-        <section className="rounded-[var(--radius-card)] bg-[var(--color-surface)] p-4 shadow-sm">
-          <p className="text-sm text-[var(--color-muted)]">支出</p>
-          <p className="tabular mt-1 text-xl font-bold text-[var(--color-expense)]">
+        <section className="rounded-[var(--radius-card)] border border-[var(--color-line)] bg-[var(--color-surface)] p-4">
+          <p className="flex items-center gap-1.5 text-sm text-[var(--color-muted)]">
+            <ArrowUpRight className="h-4 w-4 text-[var(--color-expense)]" />
+            支出
+          </p>
+          <p className="tabular mt-1.5 text-xl font-bold text-[var(--color-expense)]">
             {formatYen(expense)}
           </p>
         </section>
       </div>
 
       {/* 貯蓄率 */}
-      <section className="flex items-center justify-between rounded-[var(--radius-card)] bg-[var(--color-surface)] p-4 shadow-sm">
-        <p className="text-sm text-[var(--color-muted)]">貯蓄率</p>
+      <section className="flex items-center justify-between rounded-[var(--radius-card)] border border-[var(--color-line)] bg-[var(--color-surface)] p-4">
+        <p className="flex items-center gap-1.5 text-sm text-[var(--color-muted)]">
+          <PiggyBank className="h-4 w-4" />
+          貯蓄率
+        </p>
         <p
           className={`tabular text-xl font-bold ${
             savingsRate >= 0

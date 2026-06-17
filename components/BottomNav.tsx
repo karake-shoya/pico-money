@@ -2,12 +2,13 @@
 
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
+import { ArrowRightLeft, House, PieChart, type LucideIcon } from "lucide-react";
 
-const ITEMS = [
-  { href: "/", label: "ホーム", icon: "🏠" },
-  { href: "/transactions", label: "入出金", icon: "💴" },
-  { href: "/charts", label: "家計簿", icon: "📒" },
-] as const;
+const ITEMS: { href: string; label: string; icon: LucideIcon }[] = [
+  { href: "/", label: "ホーム", icon: House },
+  { href: "/transactions", label: "入出金", icon: ArrowRightLeft },
+  { href: "/charts", label: "家計簿", icon: PieChart },
+];
 
 // 片手操作しやすい下部固定ナビ。選択中の月(?month)を保持して遷移する。
 export function BottomNav() {
@@ -21,17 +22,21 @@ export function BottomNav() {
       <div className="mx-auto flex h-[64px] max-w-[480px] items-stretch">
         {ITEMS.map((item) => {
           const active = pathname === item.href;
+          const Icon = item.icon;
           return (
             <Link
               key={item.href}
               href={`${item.href}${query}`}
-              className={`flex flex-1 flex-col items-center justify-center gap-0.5 text-xs ${
+              className={`flex flex-1 flex-col items-center justify-center gap-1 text-[11px] ${
                 active
                   ? "font-semibold text-[var(--color-brand)]"
                   : "text-[var(--color-muted)]"
               }`}
             >
-              <span className="text-xl leading-none">{item.icon}</span>
+              <Icon
+                className="h-[22px] w-[22px]"
+                strokeWidth={active ? 2.4 : 1.8}
+              />
               <span>{item.label}</span>
             </Link>
           );

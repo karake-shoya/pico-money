@@ -1,7 +1,9 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { LayoutGrid, type LucideIcon } from "lucide-react";
 import { TransactionItem } from "./TransactionItem";
+import { categoryIcon } from "@/lib/category-icon";
 import { formatYen } from "@/lib/format";
 import type { TransactionWithCategory } from "@/lib/types";
 
@@ -67,6 +69,7 @@ export function TransactionList({
         <Chip
           active={selected === null}
           onClick={() => setSelected(null)}
+          icon={LayoutGrid}
           label="すべて"
           count={transactions.length}
         />
@@ -75,7 +78,8 @@ export function TransactionList({
             key={c.id}
             active={selected === c.id}
             onClick={() => setSelected(c.id)}
-            label={`${c.icon ?? ""}${c.name}`}
+            icon={categoryIcon(c.name)}
+            label={c.name}
             count={c.count}
           />
         ))}
@@ -108,11 +112,13 @@ export function TransactionList({
 function Chip({
   active,
   onClick,
+  icon: Icon,
   label,
   count,
 }: {
   active: boolean;
   onClick: () => void;
+  icon: LucideIcon;
   label: string;
   count: number;
 }) {
@@ -120,14 +126,15 @@ function Chip({
     <button
       type="button"
       onClick={onClick}
-      className={`shrink-0 whitespace-nowrap rounded-full border px-3 py-1.5 text-sm transition ${
+      className={`flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border px-3 py-1.5 text-sm transition ${
         active
           ? "border-[var(--color-brand)] bg-[var(--color-brand)] text-white"
           : "border-[var(--color-line)] bg-[var(--color-surface)] text-[var(--color-ink)]"
       }`}
     >
+      <Icon className="h-4 w-4" strokeWidth={1.8} />
       {label}
-      <span className={active ? "ml-1 opacity-80" : "ml-1 text-[var(--color-muted)]"}>
+      <span className={active ? "opacity-80" : "text-[var(--color-muted)]"}>
         {count}
       </span>
     </button>

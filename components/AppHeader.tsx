@@ -2,6 +2,7 @@
 
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useTransition } from "react";
+import { LogOut, Wallet } from "lucide-react";
 import { normalizeMonth } from "@/lib/format";
 import { logout } from "@/lib/actions/auth";
 
@@ -26,7 +27,7 @@ export function AppHeader() {
     <header className="sticky top-0 z-10 border-b border-[var(--color-line)] bg-[var(--color-surface)]/90 backdrop-blur">
       <div className="mx-auto flex h-14 max-w-[480px] items-center justify-between px-4">
         <span className="flex items-center gap-1.5 font-bold tracking-tight">
-          <span>💴</span>
+          <Wallet className="h-5 w-5 text-[var(--color-brand)]" strokeWidth={2} />
           <span>Pico Money</span>
         </span>
         <div className="flex items-center gap-2">
@@ -42,10 +43,10 @@ export function AppHeader() {
           <form action={logout}>
             <button
               type="submit"
-              className="h-9 rounded-lg px-2 text-sm text-[var(--color-muted)]"
+              className="flex h-9 w-9 items-center justify-center rounded-lg text-[var(--color-muted)] active:bg-[var(--color-bg)]"
               aria-label="ログアウト"
             >
-              ⏻
+              <LogOut className="h-[18px] w-[18px]" strokeWidth={1.8} />
             </button>
           </form>
         </div>

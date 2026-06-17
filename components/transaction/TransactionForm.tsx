@@ -8,6 +8,7 @@ import {
   updateTransaction,
   type TxFormState,
 } from "@/lib/actions/transactions";
+import { categoryIcon } from "@/lib/category-icon";
 import { todayDate } from "@/lib/format";
 import type { Category, TransactionWithCategory, TxType } from "@/lib/types";
 
@@ -151,21 +152,25 @@ export function TransactionForm({ categories, initial, onDone }: Props) {
         </span>
         <input type="hidden" name="category_id" value={categoryId} />
         <div className="grid grid-cols-4 gap-2">
-          {visible.map((c) => (
+          {visible.map((c) => {
+            const Icon = categoryIcon(c.name);
+            const selected = categoryId === c.id;
+            return (
             <button
               key={c.id}
               type="button"
               onClick={() => setCategoryId(c.id)}
-              className={`flex flex-col items-center gap-1 rounded-xl border py-2 text-xs transition ${
-                categoryId === c.id
-                  ? "border-[var(--color-brand)] bg-blue-50"
-                  : "border-[var(--color-line)] bg-[var(--color-surface)]"
+              className={`flex flex-col items-center gap-1.5 rounded-xl border py-2.5 text-xs transition ${
+                selected
+                  ? "border-[var(--color-brand)] bg-[var(--color-brand-soft)] text-[var(--color-brand)]"
+                  : "border-[var(--color-line)] bg-[var(--color-surface)] text-[var(--color-ink)]"
               }`}
             >
-              <span className="text-xl">{c.icon}</span>
+              <Icon className="h-5 w-5" strokeWidth={1.8} />
               <span className="leading-tight">{c.name}</span>
             </button>
-          ))}
+            );
+          })}
         </div>
       </div>
 

@@ -25,7 +25,7 @@ export default async function TransactionsPage({
       </div>
 
       {transactions.length === 0 ? (
-        <div className="rounded-[var(--radius-card)] bg-[var(--color-surface)] px-4 py-12 text-center text-sm text-[var(--color-muted)] shadow-sm">
+        <div className="rounded-[var(--radius-card)] border border-[var(--color-line)] bg-[var(--color-surface)] px-4 py-12 text-center text-sm text-[var(--color-muted)]">
           この月の取引はまだありません。
           <br />
           下の「＋」から登録できます。
