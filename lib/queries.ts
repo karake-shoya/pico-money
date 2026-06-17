@@ -1,5 +1,7 @@
 // サーバー側のデータ取得・集計（RLS により自動的に自分のデータのみ対象）
+import { unstable_cache } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
+import { createAnonClient } from '@/lib/supabase/anon';
 import { lastNMonths, monthRange } from '@/lib/format';
 import {
   aggregateCategoryBreakdown,
@@ -16,16 +18,43 @@ import type {
   TxType,
 } from '@/lib/types';
 
-// 表示可能なカテゴリ一覧（共通＋自分定義）。type, sort_order 順。
+// 共通カテゴリ（user_id IS NULL・全ユーザー共通・事実上不変）はキャッシュする。
+// 匿名クライアントで取得するため cookies に依存せず unstable_cache に乗せられる。
+// カテゴリ構成を変えた場合は revalidateTag('categories') で破棄する。
+const getCommonCategories = unstable_cache(
+  async (): Promise<Category[]> => {
+    const supabase = createAnonClient();
+    const { data, error } = await supabase
+      .from('categories')
+      .select('*')
+      .is('user_id', null)
+      .order('type', { ascending: true })
+      .order('sort_order', { ascending: true });
+    if (error) throw error;
+    return (data ?? []) as Category[];
+  },
+  ['common-categories'],
+  { tags: ['categories'], revalidate: 3600 }
+);
+
+// 表示可能なカテゴリ一覧（共通＝キャッシュ＋自分定義＝RLS取得）。type, sort_order 順。
 export async function getCategories(): Promise<Category[]> {
   const supabase = await createClient();
-  const { data, error } = await supabase
-    .from('categories')
-    .select('*')
-    .order('type', { ascending: true })
-    .order('sort_order', { ascending: true });
-  if (error) throw error;
-  return (data ?? []) as Category[];
+  const [common, userRes] = await Promise.all([
+    getCommonCategories(),
+    supabase
+      .from('categories')
+      .select('*')
+      .not('user_id', 'is', null)
+      .order('type', { ascending: true })
+      .order('sort_order', { ascending: true }),
+  ]);
+  if (userRes.error) throw userRes.error;
+  const userCats = (userRes.data ?? []) as Category[];
+  // DB 側の一括ソート（type 昇順 → sort_order 昇順）をマージ後に再現する。
+  return [...common, ...userCats].sort((a, b) =>
+    a.type === b.type ? a.sort_order - b.sort_order : a.type < b.type ? -1 : 1
+  );
 }
 
 // 指定月の取引（日付降順）。カテゴリ情報を結合。
