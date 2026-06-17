@@ -1,14 +1,13 @@
 "use client";
 
-import { useActionState, useMemo, useState, useTransition } from "react";
+import { useActionState, useMemo, useState } from "react";
 import { useFormStatus } from "react-dom";
 import {
   createTransaction,
-  deleteTransaction,
   updateTransaction,
   type TxFormState,
 } from "@/lib/actions/transactions";
-import { categoryColor, categoryIcon } from "@/lib/category-icon";
+import { ChevronDown } from "lucide-react";
 import { todayDate } from "@/lib/format";
 import type { Category, TransactionWithCategory, TxType } from "@/lib/types";
 import { Calculator } from "./Calculator";
@@ -19,7 +18,7 @@ type Props = {
   onDone: () => void;
 };
 
-function SaveButton({ isEdit }: { isEdit: boolean }) {
+function SaveButton() {
   const { pending } = useFormStatus();
   return (
     <button
@@ -27,7 +26,7 @@ function SaveButton({ isEdit }: { isEdit: boolean }) {
       disabled={pending}
       className="h-12 w-full rounded-xl bg-[var(--color-brand)] font-semibold text-white transition active:scale-[0.99] disabled:opacity-60"
     >
-      {pending ? "保存中…" : isEdit ? "更新する" : "登録する"}
+      {pending ? "保存中…" : "保存"}
     </button>
   );
 }
@@ -61,17 +60,6 @@ export function TransactionForm({ categories, initial, onDone }: Props) {
     null
   );
 
-  // 削除（編集時のみ）。スワイプに依存しないボタン導線。
-  const [isDeleting, startDelete] = useTransition();
-  function handleDelete() {
-    if (!initial) return;
-    if (!confirm("この取引を削除しますか？")) return;
-    startDelete(async () => {
-      await deleteTransaction(initial.id);
-      onDone();
-    });
-  }
-
   // type 切替時、選択中カテゴリが新 type に無ければクリア
   function changeType(next: TxType) {
     setType(next);
@@ -86,8 +74,8 @@ export function TransactionForm({ categories, initial, onDone }: Props) {
 
   return (
     <form action={formAction} className="flex min-h-0 flex-1 flex-col">
-      {/* 入力欄（上部・スクロール領域） */}
-      <div className="min-h-0 flex-1 space-y-5 overflow-y-auto px-5 pb-4">
+      {/* 入力欄（上部・スクロール領域。横はみ出しは抑止） */}
+      <div className="min-h-0 flex-1 space-y-3 overflow-y-auto overflow-x-hidden px-5 pb-3">
       {/* 収入/支出タブ（タップで切替） */}
       <input type="hidden" name="type" value={type} />
       <div className="-mx-5 -mt-1 grid grid-cols-2 border-b border-[var(--color-line)]">
@@ -117,93 +105,63 @@ export function TransactionForm({ categories, initial, onDone }: Props) {
       </div>
 
       {/* 金額（タップで電卓を開閉。電卓の入力がここに即時反映される） */}
-      <div>
-        <span className="mb-1 block text-sm text-[var(--color-muted)]">
-          金額（円）
-        </span>
-        <input type="hidden" name="amount" value={amount > 0 ? amount : ""} />
-        <button
-          type="button"
-          onClick={() => setCalcOpen((v) => !v)}
-          className={`flex h-14 w-full items-center rounded-xl border bg-[var(--color-bg)] px-4 text-left transition active:scale-[0.99] ${
-            calcOpen
-              ? "border-[var(--color-brand)]"
-              : "border-[var(--color-line)]"
+      <input type="hidden" name="amount" value={amount > 0 ? amount : ""} />
+      <button
+        type="button"
+        onClick={() => setCalcOpen((v) => !v)}
+        className={`flex h-14 w-full items-center rounded-xl border bg-[var(--color-bg)] px-4 text-left transition active:scale-[0.99] ${
+          calcOpen ? "border-[var(--color-brand)]" : "border-[var(--color-line)]"
+        }`}
+      >
+        <span className="mr-1 text-xl text-[var(--color-muted)]">¥</span>
+        <span
+          className={`tabular w-full text-right text-3xl font-bold ${
+            amount > 0 ? "text-[var(--color-ink)]" : "text-[var(--color-muted)]"
           }`}
         >
-          <span className="mr-1 text-xl text-[var(--color-muted)]">¥</span>
-          <span
-            className={`tabular w-full text-right text-3xl font-bold ${
-              amount > 0 ? "text-[var(--color-ink)]" : "text-[var(--color-muted)]"
-            }`}
-          >
-            {amount > 0 ? amount.toLocaleString("ja-JP") : "0"}
-          </span>
-        </button>
+          {amount > 0 ? amount.toLocaleString("ja-JP") : "0"}
+        </span>
+      </button>
+
+      {/* カテゴリ（選択リスト） */}
+      <div className="relative">
+        <select
+          name="category_id"
+          value={categoryId}
+          onChange={(e) => setCategoryId(e.target.value)}
+          className="h-12 w-full appearance-none rounded-xl border border-[var(--color-line)] bg-[var(--color-bg)] px-4 pr-10 text-[var(--color-ink)] outline-none focus:border-[var(--color-brand)]"
+        >
+          <option value="" disabled>
+            カテゴリを選択
+          </option>
+          {visible.map((c) => (
+            <option key={c.id} value={c.id}>
+              {c.name}
+            </option>
+          ))}
+        </select>
+        <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-5 w-5 -translate-y-1/2 text-[var(--color-muted)]" />
       </div>
 
       {/* 日付 */}
-      <label className="block">
-        <span className="mb-1 block text-sm text-[var(--color-muted)]">
-          日付
-        </span>
-        <input
-          type="date"
-          name="date"
-          required
-          defaultValue={initial?.date ?? todayDate()}
-          max={todayDate()}
-          className="h-12 w-full rounded-xl border border-[var(--color-line)] bg-[var(--color-bg)] px-4 outline-none focus:border-[var(--color-brand)]"
-        />
-      </label>
-
-      {/* カテゴリ */}
-      <div>
-        <span className="mb-1 block text-sm text-[var(--color-muted)]">
-          カテゴリ
-        </span>
-        <input type="hidden" name="category_id" value={categoryId} />
-        <div className="grid grid-cols-4 gap-2">
-          {visible.map((c) => {
-            const Icon = categoryIcon(c.name);
-            const selected = categoryId === c.id;
-            return (
-            <button
-              key={c.id}
-              type="button"
-              onClick={() => setCategoryId(c.id)}
-              className={`flex flex-col items-center gap-1.5 rounded-xl border py-2.5 text-xs transition ${
-                selected
-                  ? "border-[var(--color-brand)] bg-[var(--color-brand-soft)] text-[var(--color-brand)]"
-                  : "border-[var(--color-line)] bg-[var(--color-surface)] text-[var(--color-ink)]"
-              }`}
-            >
-              <Icon
-                className="h-5 w-5"
-                strokeWidth={1.8}
-                style={selected ? undefined : { color: categoryColor(c.name) }}
-              />
-              <span className="leading-tight">{c.name}</span>
-            </button>
-            );
-          })}
-        </div>
-      </div>
+      <input
+        type="date"
+        name="date"
+        required
+        defaultValue={initial?.date ?? todayDate()}
+        max={todayDate()}
+        className="block h-12 w-full min-w-0 appearance-none rounded-xl border border-[var(--color-line)] bg-[var(--color-bg)] px-4 outline-none focus:border-[var(--color-brand)]"
+      />
 
       {/* メモ */}
-      <label className="block">
-        <span className="mb-1 block text-sm text-[var(--color-muted)]">
-          メモ（任意）
-        </span>
-        <input
-          type="text"
-          name="memo"
-          maxLength={100}
-          defaultValue={initial?.memo ?? ""}
-          placeholder="例: ランチ"
-          className="h-12 w-full rounded-xl border border-[var(--color-line)] bg-[var(--color-bg)] px-4 outline-none focus:border-[var(--color-brand)]"
-        />
-      </label>
+      <input
+        type="text"
+        name="memo"
+        maxLength={100}
+        defaultValue={initial?.memo ?? ""}
+        placeholder="メモ（任意）"
+        className="h-12 w-full rounded-xl border border-[var(--color-line)] bg-[var(--color-bg)] px-4 outline-none focus:border-[var(--color-brand)]"
+      />
 
       {errorMsg && (
         <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-[var(--color-expense)]">
@@ -212,20 +170,9 @@ export function TransactionForm({ categories, initial, onDone }: Props) {
       )}
       </div>
 
-      {/* 保存フッター（常時表示） */}
-      <div className="shrink-0 space-y-2 border-t border-[var(--color-line)] px-5 py-3">
-        <SaveButton isEdit={isEdit} />
-
-        {isEdit && (
-          <button
-            type="button"
-            onClick={handleDelete}
-            disabled={isDeleting}
-            className="h-11 w-full rounded-xl text-sm font-semibold text-[var(--color-expense)] transition active:scale-[0.99] disabled:opacity-60"
-          >
-            {isDeleting ? "削除中…" : "この取引を削除"}
-          </button>
-        )}
+      {/* 保存フッター（常時表示）。削除はヘッダー左上のゴミ箱から行う。 */}
+      <div className="shrink-0 border-t border-[var(--color-line)] px-5 py-3">
+        <SaveButton />
       </div>
 
       {/* 電卓パネル（下部ドッキング） */}

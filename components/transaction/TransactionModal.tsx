@@ -6,11 +6,13 @@ import {
   useContext,
   useEffect,
   useState,
+  useTransition,
   type ReactNode,
 } from "react";
 import { useRouter } from "next/navigation";
-import { Plus, X } from "lucide-react";
+import { Plus, Trash2, X } from "lucide-react";
 import { TransactionForm } from "./TransactionForm";
+import { deleteTransaction } from "@/lib/actions/transactions";
 import type { Category, TransactionWithCategory } from "@/lib/types";
 
 type ModalContextValue = {
@@ -51,6 +53,17 @@ export function TransactionModalProvider({
   }, []);
   const close = useCallback(() => setOpen(false), []);
 
+  // 削除（編集時のみ）。ヘッダー左上のゴミ箱から実行する。
+  const [isDeleting, startDelete] = useTransition();
+  function handleDelete() {
+    if (!editing) return;
+    if (!confirm("この取引を削除しますか？")) return;
+    startDelete(async () => {
+      await deleteTransaction(editing.id);
+      handleDone();
+    });
+  }
+
   // モーダル表示中は背面スクロールを止める
   useEffect(() => {
     document.body.style.overflow = open ? "hidden" : "";
@@ -89,18 +102,30 @@ export function TransactionModalProvider({
             onClick={close}
             className="absolute inset-0 bg-black/40"
           />
-          <div className="relative mx-auto flex max-h-[90dvh] w-full max-w-[480px] flex-col overflow-hidden rounded-t-3xl bg-[var(--color-surface)] pb-[env(safe-area-inset-bottom)]">
+          <div className="relative mx-auto flex h-[94dvh] max-h-[94dvh] w-full max-w-[480px] flex-col overflow-hidden rounded-t-3xl bg-[var(--color-surface)] pb-[env(safe-area-inset-bottom)]">
             <div className="shrink-0 px-5 pb-2 pt-3">
               <div className="mx-auto mb-3 h-1.5 w-10 rounded-full bg-[var(--color-line)]" />
-              <div className="flex items-center justify-between">
-                <h2 className="text-lg font-bold">
-                  {editing ? "取引を編集" : "取引を登録"}
+              {/* タイトルを中央に、削除（編集時）を左端・閉じるを右端に配置 */}
+              <div className="relative flex h-8 items-center justify-center">
+                {editing && (
+                  <button
+                    type="button"
+                    onClick={handleDelete}
+                    disabled={isDeleting}
+                    aria-label="この取引を削除"
+                    className="absolute left-0 flex h-8 w-8 items-center justify-center rounded-full text-[var(--color-expense)] transition active:bg-[var(--color-bg)] disabled:opacity-60"
+                  >
+                    <Trash2 className="h-5 w-5" />
+                  </button>
+                )}
+                <h2 className="text-base font-bold">
+                  {editing ? "編集" : "入力"}
                 </h2>
                 <button
                   type="button"
                   onClick={close}
                   aria-label="閉じる"
-                  className="flex h-8 w-8 items-center justify-center rounded-full text-[var(--color-muted)] active:bg-[var(--color-bg)]"
+                  className="absolute right-0 flex h-8 w-8 items-center justify-center rounded-full text-[var(--color-muted)] active:bg-[var(--color-bg)]"
                 >
                   <X className="h-5 w-5" />
                 </button>
