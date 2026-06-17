@@ -39,9 +39,6 @@ export type MonthlySummary = {
   savingsRate: number; // 貯蓄率（収入に対する収支の割合, %）。収入0なら0。
 };
 
-// 月別収支（棒グラフ用）
-export type MonthlyBar = { month: string; income: number; expense: number };
-
 // カテゴリ別内訳（円グラフ用）
 export type CategorySlice = {
   categoryId: string;

@@ -1,7 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
   aggregateCategoryBreakdown,
-  aggregateMonthlyBars,
   aggregateMonthlySummaries,
   summarize,
   type CategoryRow,
@@ -45,30 +44,6 @@ describe("summarize", () => {
       balance: 0,
       savingsRate: 0,
     });
-  });
-});
-
-describe("aggregateMonthlyBars", () => {
-  const months = ["2026-05", "2026-06"];
-  it("月ごとに収入・支出を割り当てる", () => {
-    const rows: DatedRow[] = [
-      { date: "2026-05-10", type: "income", amount: 1000 },
-      { date: "2026-05-20", type: "expense", amount: 400 },
-      { date: "2026-06-01", type: "expense", amount: 700 },
-    ];
-    expect(aggregateMonthlyBars(rows, months)).toEqual([
-      { month: "2026-05", income: 1000, expense: 400 },
-      { month: "2026-06", income: 0, expense: 700 },
-    ]);
-  });
-  it("対象月リスト外の行は無視する", () => {
-    const rows: DatedRow[] = [
-      { date: "2026-04-30", type: "income", amount: 9999 },
-    ];
-    expect(aggregateMonthlyBars(rows, months)).toEqual([
-      { month: "2026-05", income: 0, expense: 0 },
-      { month: "2026-06", income: 0, expense: 0 },
-    ]);
   });
 });
 

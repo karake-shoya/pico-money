@@ -67,12 +67,6 @@ export function monthLabel(month: string): string {
   return `${y}年${m}月`;
 }
 
-// YYYY-MM の短縮ラベル（例: 6月）。グラフ軸用。
-export function shortMonthLabel(month: string): string {
-  const m = Number(month.split('-')[1]);
-  return `${m}月`;
-}
-
 // YYYY-MM-DD の表示ラベル（例: 6/17(火)）
 const WEEKDAYS = ['日', '月', '火', '水', '木', '金', '土'];
 export function dateLabel(date: string): string {

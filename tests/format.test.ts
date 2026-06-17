@@ -8,7 +8,6 @@ import {
   monthRange,
   normalizeMonth,
   shiftMonth,
-  shortMonthLabel,
 } from "@/lib/format";
 
 describe("formatYen", () => {
@@ -108,9 +107,6 @@ describe("lastNMonths", () => {
 describe("ラベル整形", () => {
   it("monthLabel は 和文の年月", () => {
     expect(monthLabel("2026-06")).toBe("2026年6月");
-  });
-  it("shortMonthLabel は 月のみ", () => {
-    expect(shortMonthLabel("2026-06")).toBe("6月");
   });
   it("dateLabel は 月/日(曜日)", () => {
     // 2026-06-17 は水曜日
