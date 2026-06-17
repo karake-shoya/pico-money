@@ -28,7 +28,8 @@ body {
   font-family: var(--font-sans);
   /* iOS セーフエリア + 下部ナビ/FAB のための余白はレイアウト側で確保 */
   -webkit-font-smoothing: antialiased;
-  overscroll-behavior-y: none;
+  /* 横スワイプによるブラウザの戻る/進むを抑止（月スワイプを優先） */
+  overscroll-behavior: none;
 }
 
 /* 数値の桁揃え */

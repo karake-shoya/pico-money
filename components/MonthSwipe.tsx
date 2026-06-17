@@ -108,14 +108,17 @@ export function MonthSwipe({
         </button>
       </div>
 
-      {/* スワイプ領域（横は自前処理・縦スクロールはブラウザに委譲） */}
+      {/* スワイプ領域。-mx-4 px-4 で親(main)の左右パディングを相殺し、
+          画面端から始まるスワイプもこのハンドラで受ける（＝ブラウザの戻る操作を奪われない）。 */}
       <div
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
         onPointerUp={onPointerEnd}
         onPointerCancel={onPointerEnd}
+        className="-mx-4 px-4"
         style={{
           touchAction: "pan-y",
+          overscrollBehaviorX: "contain",
           transform: `translateX(${dx * 0.4}px)`,
           transition: dragging ? "none" : "transform 0.2s ease",
         }}
