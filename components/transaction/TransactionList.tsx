@@ -6,13 +6,18 @@ import { formatYen } from "@/lib/format";
 import type { TransactionWithCategory } from "@/lib/types";
 
 // その月の明細を、カテゴリ別フィルタチップ付きで表示する。
+// initialCategoryId が渡された場合はそのカテゴリで初期絞り込み（家計簿からのドリルダウン）。
 export function TransactionList({
   transactions,
+  initialCategoryId,
 }: {
   transactions: TransactionWithCategory[];
+  initialCategoryId?: string;
 }) {
   // null = すべて
-  const [selected, setSelected] = useState<string | null>(null);
+  const [selected, setSelected] = useState<string | null>(
+    initialCategoryId ?? null
+  );
 
   // 出現するカテゴリを集計（件数・合計）。件数の多い順に並べる。
   const categories = useMemo(() => {

@@ -2,13 +2,14 @@ import { TransactionList } from "@/components/transaction/TransactionList";
 import { getTransactionsForMonth } from "@/lib/queries";
 import { monthLabel, normalizeMonth } from "@/lib/format";
 
-// 明細リスト。選択中の月の取引を日付降順で表示。
+// 入出金（明細リスト）。選択中の月の取引を日付降順で表示。
+// ?cat=<categoryId> が指定されていれば、そのカテゴリで初期絞り込みする（家計簿からのドリルダウン）。
 export default async function TransactionsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ month?: string }>;
+  searchParams: Promise<{ month?: string; cat?: string }>;
 }) {
-  const { month: monthParam } = await searchParams;
+  const { month: monthParam, cat } = await searchParams;
   const month = normalizeMonth(monthParam);
   const transactions = await getTransactionsForMonth(month);
 
@@ -16,7 +17,7 @@ export default async function TransactionsPage({
     <div className="space-y-3">
       <div className="flex items-center justify-between">
         <p className="text-sm text-[var(--color-muted)]">
-          {monthLabel(month)}の明細
+          {monthLabel(month)}の入出金
         </p>
         <p className="text-sm text-[var(--color-muted)]">
           {transactions.length}件
@@ -30,7 +31,7 @@ export default async function TransactionsPage({
           下の「＋」から登録できます。
         </div>
       ) : (
-        <TransactionList transactions={transactions} />
+        <TransactionList transactions={transactions} initialCategoryId={cat} />
       )}
 
       <p className="px-1 text-center text-xs text-[var(--color-muted)]">

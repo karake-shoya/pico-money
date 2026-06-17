@@ -24,9 +24,10 @@ export default async function ChartsPage({
   return (
     <div className="space-y-3">
       <p className="text-sm text-[var(--color-muted)]">
-        {monthLabel(month)}のグラフ
+        {monthLabel(month)}の家計簿
       </p>
       <Charts
+        month={month}
         bars={bars}
         expenseSlices={expenseSlices}
         incomeSlices={incomeSlices}

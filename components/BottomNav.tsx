@@ -5,8 +5,8 @@ import { usePathname, useSearchParams } from "next/navigation";
 
 const ITEMS = [
   { href: "/", label: "ホーム", icon: "🏠" },
-  { href: "/transactions", label: "明細", icon: "📋" },
-  { href: "/charts", label: "グラフ", icon: "📊" },
+  { href: "/transactions", label: "入出金", icon: "💴" },
+  { href: "/charts", label: "家計簿", icon: "📒" },
 ] as const;
 
 // 片手操作しやすい下部固定ナビ。選択中の月(?month)を保持して遷移する。

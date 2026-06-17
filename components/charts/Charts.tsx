@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import {
   Bar,
   BarChart,
@@ -32,12 +33,13 @@ const PIE_COLORS = [
 ];
 
 type Props = {
+  month: string;
   bars: MonthlyBar[];
   expenseSlices: CategorySlice[];
   incomeSlices: CategorySlice[];
 };
 
-export function Charts({ bars, expenseSlices, incomeSlices }: Props) {
+export function Charts({ month, bars, expenseSlices, incomeSlices }: Props) {
   const [pieType, setPieType] = useState<TxType>("expense");
 
   const barData = bars.map((b) => ({
@@ -49,6 +51,7 @@ export function Charts({ bars, expenseSlices, incomeSlices }: Props) {
   const slices = pieType === "expense" ? expenseSlices : incomeSlices;
   const total = slices.reduce((s, c) => s + c.amount, 0);
   const pieData = slices.map((c) => ({
+    categoryId: c.categoryId,
     name: c.name,
     icon: c.icon,
     value: c.amount,
@@ -154,23 +157,29 @@ export function Charts({ bars, expenseSlices, incomeSlices }: Props) {
               </div>
             </div>
 
-            {/* 凡例（金額と割合） */}
-            <ul className="mt-3 space-y-2">
+            {/* カテゴリ別ランキング（金額と割合）。行タップで入出金へドリルダウン。 */}
+            <ul className="mt-3 space-y-1">
               {pieData.map((d, i) => (
-                <li key={d.name} className="flex items-center gap-2 text-sm">
-                  <span
-                    className="h-3 w-3 shrink-0 rounded-sm"
-                    style={{ background: PIE_COLORS[i % PIE_COLORS.length] }}
-                  />
-                  <span className="flex-1 truncate">
-                    {d.icon} {d.name}
-                  </span>
-                  <span className="tabular text-[var(--color-muted)]">
-                    {d.percent}%
-                  </span>
-                  <span className="tabular w-24 text-right font-medium">
-                    {formatYen(d.value)}
-                  </span>
+                <li key={d.categoryId}>
+                  <Link
+                    href={`/transactions?month=${month}&cat=${d.categoryId}`}
+                    className="flex items-center gap-2 rounded-lg py-1.5 text-sm active:bg-[var(--color-bg)]"
+                  >
+                    <span
+                      className="h-3 w-3 shrink-0 rounded-sm"
+                      style={{ background: PIE_COLORS[i % PIE_COLORS.length] }}
+                    />
+                    <span className="flex-1 truncate">
+                      {d.icon} {d.name}
+                    </span>
+                    <span className="tabular text-[var(--color-muted)]">
+                      {d.percent}%
+                    </span>
+                    <span className="tabular w-24 text-right font-medium">
+                      {formatYen(d.value)}
+                    </span>
+                    <span className="text-[var(--color-muted)]">›</span>
+                  </Link>
                 </li>
               ))}
             </ul>
