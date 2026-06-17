@@ -19,7 +19,7 @@ export function BottomNav() {
 
   return (
     <nav className="fixed inset-x-0 bottom-0 z-20 border-t border-[var(--color-line)] bg-[var(--color-surface)] pb-[env(safe-area-inset-bottom)]">
-      <div className="mx-auto flex h-[64px] max-w-[480px] items-stretch">
+      <div className="mx-auto flex h-[52px] max-w-[480px] items-stretch">
         {ITEMS.map((item) => {
           const active = pathname === item.href;
           const Icon = item.icon;
@@ -27,14 +27,14 @@ export function BottomNav() {
             <Link
               key={item.href}
               href={`${item.href}${query}`}
-              className={`flex flex-1 flex-col items-center justify-center gap-1 text-[11px] ${
+              className={`flex flex-1 flex-col items-center justify-center gap-0.5 text-[10px] ${
                 active
                   ? "font-semibold text-[var(--color-brand)]"
                   : "text-[var(--color-muted)]"
               }`}
             >
               <Icon
-                className="h-[22px] w-[22px]"
+                className="h-[20px] w-[20px]"
                 strokeWidth={active ? 2.4 : 1.8}
               />
               <span>{item.label}</span>
