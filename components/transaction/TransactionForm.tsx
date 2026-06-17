@@ -1,10 +1,9 @@
 "use client";
 
-import { useActionState, useMemo, useState, useTransition } from "react";
+import { useActionState, useMemo, useState } from "react";
 import { useFormStatus } from "react-dom";
 import {
   createTransaction,
-  deleteTransaction,
   updateTransaction,
   type TxFormState,
 } from "@/lib/actions/transactions";
@@ -60,17 +59,6 @@ export function TransactionForm({ categories, initial, onDone }: Props) {
     },
     null
   );
-
-  // 削除（編集時のみ）。スワイプに依存しないボタン導線。
-  const [isDeleting, startDelete] = useTransition();
-  function handleDelete() {
-    if (!initial) return;
-    if (!confirm("この取引を削除しますか？")) return;
-    startDelete(async () => {
-      await deleteTransaction(initial.id);
-      onDone();
-    });
-  }
 
   // type 切替時、選択中カテゴリが新 type に無ければクリア
   function changeType(next: TxType) {
@@ -182,20 +170,9 @@ export function TransactionForm({ categories, initial, onDone }: Props) {
       )}
       </div>
 
-      {/* 保存フッター（常時表示） */}
-      <div className="shrink-0 space-y-2 border-t border-[var(--color-line)] px-5 py-3">
+      {/* 保存フッター（常時表示）。削除はヘッダー左上のゴミ箱から行う。 */}
+      <div className="shrink-0 border-t border-[var(--color-line)] px-5 py-3">
         <SaveButton />
-
-        {isEdit && (
-          <button
-            type="button"
-            onClick={handleDelete}
-            disabled={isDeleting}
-            className="h-11 w-full rounded-xl text-sm font-semibold text-[var(--color-expense)] transition active:scale-[0.99] disabled:opacity-60"
-          >
-            {isDeleting ? "削除中…" : "この取引を削除"}
-          </button>
-        )}
       </div>
 
       {/* 電卓パネル（下部ドッキング） */}
