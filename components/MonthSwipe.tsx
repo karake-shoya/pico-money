@@ -149,7 +149,7 @@ export function MonthSwipe({
           画面端から始まるスワイプもこのハンドラで受ける。 */}
       <div
         ref={areaRef}
-        className="-mx-4 touch-pan-y px-4"
+        className="-mx-4 min-h-[70dvh] touch-pan-y px-4"
         style={{
           overscrollBehaviorX: "contain",
           transform: `translateX(${dx * 0.4}px)`,
