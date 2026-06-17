@@ -6,6 +6,7 @@ import { lastNMonths, monthRange } from '@/lib/format';
 import {
   aggregateCategoryBreakdown,
   aggregateMonthlyBars,
+  aggregateMonthlySummaries,
   summarize,
   type CategoryRow,
 } from '@/lib/summary';
@@ -89,24 +90,34 @@ export async function getMonthlySummary(
   return summarize(data ?? []);
 }
 
-// 直近6ヶ月の月別収支（棒グラフ用、古い順）
-export async function getMonthlyBars(
-  baseMonth: string,
-  n = 6
-): Promise<MonthlyBar[]> {
+// 指定月リストを覆う期間の取引（date, type, amount）を1クエリで取得する共通処理。
+async function fetchDatedRows(months: string[]) {
   const supabase = await createClient();
-  const months = lastNMonths(baseMonth, n);
   const { start } = monthRange(months[0]);
   const { end } = monthRange(months[months.length - 1]);
-
   const { data, error } = await supabase
     .from('transactions')
     .select('date, type, amount')
     .gte('date', start)
     .lt('date', end);
   if (error) throw error;
+  return data ?? [];
+}
 
-  return aggregateMonthlyBars(data ?? [], months);
+// 指定月リストそれぞれの月次サマリーをまとめて取得。ホームのカルーセル先読み用。
+export async function getMonthlySummaries(
+  months: string[]
+): Promise<Record<string, MonthlySummary>> {
+  return aggregateMonthlySummaries(await fetchDatedRows(months), months);
+}
+
+// 直近6ヶ月の月別収支（棒グラフ用、古い順）
+export async function getMonthlyBars(
+  baseMonth: string,
+  n = 6
+): Promise<MonthlyBar[]> {
+  const months = lastNMonths(baseMonth, n);
+  return aggregateMonthlyBars(await fetchDatedRows(months), months);
 }
 
 // カテゴリ別内訳（円グラフ用）。選択月・指定 type の合計を金額降順で。

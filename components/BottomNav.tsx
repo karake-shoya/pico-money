@@ -1,8 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname, useSearchParams } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { ArrowRightLeft, House, PieChart, type LucideIcon } from "lucide-react";
+import { useMonth } from "@/components/MonthProvider";
 
 const ITEMS: { href: string; label: string; icon: LucideIcon }[] = [
   { href: "/", label: "ホーム", icon: House },
@@ -13,9 +14,8 @@ const ITEMS: { href: string; label: string; icon: LucideIcon }[] = [
 // 片手操作しやすい下部固定ナビ。選択中の月(?month)を保持して遷移する。
 export function BottomNav() {
   const pathname = usePathname();
-  const searchParams = useSearchParams();
-  const month = searchParams.get("month");
-  const query = month ? `?month=${month}` : "";
+  const { month } = useMonth();
+  const query = `?month=${month}`;
 
   return (
     <nav className="fixed inset-x-0 bottom-0 z-20 border-t border-[var(--color-line)] bg-[var(--color-surface)] pb-[env(safe-area-inset-bottom)]">
