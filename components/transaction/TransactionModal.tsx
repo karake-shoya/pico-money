@@ -89,18 +89,19 @@ export function TransactionModalProvider({
             onClick={close}
             className="absolute inset-0 bg-black/40"
           />
-          <div className="relative mx-auto flex max-h-[90dvh] w-full max-w-[480px] flex-col overflow-hidden rounded-t-3xl bg-[var(--color-surface)] pb-[env(safe-area-inset-bottom)]">
+          <div className="relative mx-auto flex h-[94dvh] max-h-[94dvh] w-full max-w-[480px] flex-col overflow-hidden rounded-t-3xl bg-[var(--color-surface)] pb-[env(safe-area-inset-bottom)]">
             <div className="shrink-0 px-5 pb-2 pt-3">
               <div className="mx-auto mb-3 h-1.5 w-10 rounded-full bg-[var(--color-line)]" />
-              <div className="flex items-center justify-between">
-                <h2 className="text-lg font-bold">
-                  {editing ? "取引を編集" : "取引を登録"}
+              {/* タイトルを中央に、閉じるボタンを右端に配置 */}
+              <div className="relative flex h-8 items-center justify-center">
+                <h2 className="text-base font-bold">
+                  {editing ? "編集" : "入力"}
                 </h2>
                 <button
                   type="button"
                   onClick={close}
                   aria-label="閉じる"
-                  className="flex h-8 w-8 items-center justify-center rounded-full text-[var(--color-muted)] active:bg-[var(--color-bg)]"
+                  className="absolute right-0 flex h-8 w-8 items-center justify-center rounded-full text-[var(--color-muted)] active:bg-[var(--color-bg)]"
                 >
                   <X className="h-5 w-5" />
                 </button>
