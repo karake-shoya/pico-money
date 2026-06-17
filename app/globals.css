@@ -47,3 +47,16 @@ body {
 * {
   -webkit-tap-highlight-color: transparent;
 }
+
+/* 日付入力: WebKit で値が小さく上寄せになるのを防ぎ、欄の中で縦中央・等倍に揃える */
+.date-field {
+  display: flex;
+  align-items: center;
+}
+.date-field::-webkit-date-and-time-value {
+  text-align: left;
+  margin: 0;
+}
+.date-field::-webkit-datetime-edit {
+  line-height: 1.2;
+}

@@ -8,9 +8,18 @@ import {
   type TxFormState,
 } from "@/lib/actions/transactions";
 import { ChevronDown } from "lucide-react";
+import { CategoryBadge } from "@/lib/category-icon";
 import { todayDate } from "@/lib/format";
 import type { Category, TransactionWithCategory, TxType } from "@/lib/types";
 import { Calculator } from "./Calculator";
+import { CategoryPicker } from "./CategoryPicker";
+
+// 新規登録時のデフォルトカテゴリ（支出・食費）。見つからなければ空。
+function defaultCategoryId(categories: Category[]): string {
+  return (
+    categories.find((c) => c.type === "expense" && c.name === "食費")?.id ?? ""
+  );
+}
 
 type Props = {
   categories: Category[];
@@ -35,11 +44,12 @@ export function TransactionForm({ categories, initial, onDone }: Props) {
   const isEdit = !!initial;
   const [type, setType] = useState<TxType>(initial?.type ?? "expense");
   const [categoryId, setCategoryId] = useState<string>(
-    initial?.category_id ?? ""
+    () => initial?.category_id ?? defaultCategoryId(categories)
   );
   const [amount, setAmount] = useState<number>(initial?.amount ?? 0);
   // 新規登録時は電卓を開いた状態で開始し、すぐに数値入力できるようにする。
   const [calcOpen, setCalcOpen] = useState(!initial);
+  const [catPickerOpen, setCatPickerOpen] = useState(false);
 
   // 選択中の type に応じてカテゴリを絞り込み
   const visible = useMemo(
@@ -71,6 +81,8 @@ export function TransactionForm({ categories, initial, onDone }: Props) {
 
   const errorMsg =
     state && "error" in state ? state.error : null;
+
+  const selectedCat = categories.find((c) => c.id === categoryId) ?? null;
 
   return (
     <form action={formAction} className="flex min-h-0 flex-1 flex-col">
@@ -123,25 +135,31 @@ export function TransactionForm({ categories, initial, onDone }: Props) {
         </span>
       </button>
 
-      {/* カテゴリ（選択リスト） */}
-      <div className="relative">
-        <select
-          name="category_id"
-          value={categoryId}
-          onChange={(e) => setCategoryId(e.target.value)}
-          className="h-12 w-full appearance-none rounded-xl border border-[var(--color-line)] bg-[var(--color-bg)] px-4 pr-10 text-[var(--color-ink)] outline-none focus:border-[var(--color-brand)]"
-        >
-          <option value="" disabled>
+      {/* カテゴリ（アイコン付きのピッカーで選択） */}
+      <input type="hidden" name="category_id" value={categoryId} />
+      <button
+        type="button"
+        onClick={() => setCatPickerOpen(true)}
+        className="flex h-12 w-full items-center gap-3 rounded-xl border border-[var(--color-line)] bg-[var(--color-bg)] px-3 text-left transition active:scale-[0.99] focus:border-[var(--color-brand)]"
+      >
+        {selectedCat ? (
+          <>
+            <CategoryBadge
+              name={selectedCat.name}
+              className="h-8 w-8"
+              iconClassName="h-[18px] w-[18px]"
+            />
+            <span className="flex-1 truncate font-medium">
+              {selectedCat.name}
+            </span>
+          </>
+        ) : (
+          <span className="flex-1 text-[var(--color-muted)]">
             カテゴリを選択
-          </option>
-          {visible.map((c) => (
-            <option key={c.id} value={c.id}>
-              {c.name}
-            </option>
-          ))}
-        </select>
-        <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-5 w-5 -translate-y-1/2 text-[var(--color-muted)]" />
-      </div>
+          </span>
+        )}
+        <ChevronDown className="h-5 w-5 shrink-0 text-[var(--color-muted)]" />
+      </button>
 
       {/* 日付 */}
       <input
@@ -150,7 +168,7 @@ export function TransactionForm({ categories, initial, onDone }: Props) {
         required
         defaultValue={initial?.date ?? todayDate()}
         max={todayDate()}
-        className="block h-12 w-full min-w-0 appearance-none rounded-xl border border-[var(--color-line)] bg-[var(--color-bg)] px-4 outline-none focus:border-[var(--color-brand)]"
+        className="date-field h-12 w-full min-w-0 rounded-xl border border-[var(--color-line)] bg-[var(--color-bg)] px-4 text-base outline-none focus:border-[var(--color-brand)]"
       />
 
       {/* メモ */}
@@ -181,6 +199,16 @@ export function TransactionForm({ categories, initial, onDone }: Props) {
           value={amount}
           onChange={setAmount}
           onClose={() => setCalcOpen(false)}
+        />
+      )}
+
+      {/* カテゴリ選択シート */}
+      {catPickerOpen && (
+        <CategoryPicker
+          categories={visible}
+          selectedId={categoryId}
+          onSelect={setCategoryId}
+          onClose={() => setCatPickerOpen(false)}
         />
       )}
     </form>
