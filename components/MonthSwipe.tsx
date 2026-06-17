@@ -4,10 +4,11 @@ import { useRef, useState, useTransition, type ReactNode } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { monthLabel, shiftMonth } from "@/lib/format";
 
-const THRESHOLD = 60; // この距離(px)以上の横スワイプで月移動
+const THRESHOLD = 50; // この距離(px)以上の横スワイプで月移動
 
-// 月次の収支を「◀ 2026年6月 ▶」で前後に切り替えられるラッパー。
+// 月次の収支を「‹ 2026年6月 ›」で前後に切り替えられるラッパー。
 // スワイプ（左=翌月 / 右=前月）とタップ両対応。?month を更新し全画面で共有する。
+// Pointer Events を使い、タッチ・マウスドラッグの両方に対応する。
 export function MonthSwipe({
   month,
   children,
@@ -20,9 +21,12 @@ export function MonthSwipe({
   const searchParams = useSearchParams();
   const [isPending, startTransition] = useTransition();
 
-  const [dx, setDx] = useState(0);
+  const [dx, setDx] = useState(0); // 表示追従用
   const [dragging, setDragging] = useState(false);
-  const start = useRef<{ x: number; y: number } | null>(null);
+
+  const down = useRef(false);
+  const startPt = useRef<{ x: number; y: number } | null>(null);
+  const dxRef = useRef(0); // 終了判定はこちらを参照（state の取りこぼし防止）
   const horizontal = useRef(false);
 
   function go(delta: number) {
@@ -33,28 +37,50 @@ export function MonthSwipe({
     });
   }
 
-  function onTouchStart(e: React.TouchEvent) {
-    start.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+  function onPointerDown(e: React.PointerEvent) {
+    down.current = true;
+    startPt.current = { x: e.clientX, y: e.clientY };
     horizontal.current = false;
+    dxRef.current = 0;
     setDragging(true);
   }
-  function onTouchMove(e: React.TouchEvent) {
-    if (!start.current) return;
-    const ddx = e.touches[0].clientX - start.current.x;
-    const ddy = e.touches[0].clientY - start.current.y;
-    // 横方向の意図が明確なときだけ追従（縦スクロールを妨げない）
-    if (!horizontal.current && Math.abs(ddx) > Math.abs(ddy) && Math.abs(ddx) > 10) {
+
+  function onPointerMove(e: React.PointerEvent) {
+    if (!down.current || !startPt.current) return;
+    const ddx = e.clientX - startPt.current.x;
+    const ddy = e.clientY - startPt.current.y;
+    // 横方向の意図が明確になったら、その時点でポインタを捕捉して追従開始
+    // （縦スクロールは touch-action: pan-y がブラウザ側で処理する）
+    if (
+      !horizontal.current &&
+      Math.abs(ddx) > Math.abs(ddy) &&
+      Math.abs(ddx) > 8
+    ) {
       horizontal.current = true;
+      try {
+        e.currentTarget.setPointerCapture(e.pointerId);
+      } catch {
+        // 捕捉非対応でも処理続行
+      }
     }
-    if (horizontal.current) setDx(ddx);
+    if (horizontal.current) {
+      dxRef.current = ddx;
+      setDx(ddx);
+    }
   }
-  function onTouchEnd() {
+
+  function onPointerEnd() {
+    if (!down.current) return;
+    down.current = false;
     setDragging(false);
-    if (horizontal.current && Math.abs(dx) > THRESHOLD) {
-      go(dx < 0 ? 1 : -1); // 左スワイプ=翌月, 右スワイプ=前月
-    }
+    const moved = dxRef.current;
+    startPt.current = null;
+    horizontal.current = false;
+    dxRef.current = 0;
     setDx(0);
-    start.current = null;
+    if (Math.abs(moved) > THRESHOLD) {
+      go(moved < 0 ? 1 : -1); // 左スワイプ=翌月, 右スワイプ=前月
+    }
   }
 
   return (
@@ -82,12 +108,14 @@ export function MonthSwipe({
         </button>
       </div>
 
-      {/* スワイプ領域 */}
+      {/* スワイプ領域（横は自前処理・縦スクロールはブラウザに委譲） */}
       <div
-        onTouchStart={onTouchStart}
-        onTouchMove={onTouchMove}
-        onTouchEnd={onTouchEnd}
+        onPointerDown={onPointerDown}
+        onPointerMove={onPointerMove}
+        onPointerUp={onPointerEnd}
+        onPointerCancel={onPointerEnd}
         style={{
+          touchAction: "pan-y",
           transform: `translateX(${dx * 0.4}px)`,
           transition: dragging ? "none" : "transform 0.2s ease",
         }}
