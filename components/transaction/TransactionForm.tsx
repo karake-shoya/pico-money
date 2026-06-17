@@ -85,9 +85,14 @@ export function TransactionForm({ categories, initial, onDone }: Props) {
   const selectedCat = categories.find((c) => c.id === categoryId) ?? null;
 
   return (
-    <form action={formAction} className="flex min-h-0 flex-1 flex-col">
-      {/* 入力欄（上部・スクロール領域。横はみ出しは抑止） */}
-      <div className="min-h-0 flex-1 space-y-3 overflow-y-auto overflow-x-hidden px-5 pb-3">
+    <form action={formAction} className="relative flex min-h-0 flex-1 flex-col">
+      {/* 入力欄（スクロール領域。横はみ出しは抑止）。
+          電卓表示中は下部の余白を広げ、保存ボタンが電卓の上までスクロールできるようにする。 */}
+      <div
+        className={`min-h-0 flex-1 space-y-3 overflow-y-auto overflow-x-hidden px-5 pt-1 ${
+          calcOpen ? "pb-[320px]" : "pb-5"
+        }`}
+      >
       {/* 収入/支出タブ（タップで切替） */}
       <input type="hidden" name="type" value={type} />
       <div className="-mx-5 -mt-1 grid grid-cols-2 border-b border-[var(--color-line)]">
@@ -186,20 +191,20 @@ export function TransactionForm({ categories, initial, onDone }: Props) {
           {errorMsg}
         </p>
       )}
+
+      {/* 保存ボタン（メモの下）。削除はヘッダー左上のゴミ箱から行う。 */}
+      <SaveButton />
       </div>
 
-      {/* 保存フッター（常時表示）。削除はヘッダー左上のゴミ箱から行う。 */}
-      <div className="shrink-0 border-t border-[var(--color-line)] px-5 py-3">
-        <SaveButton />
-      </div>
-
-      {/* 電卓パネル（下部ドッキング） */}
+      {/* 電卓パネル（下部にオーバーレイで重ねる） */}
       {calcOpen && (
-        <Calculator
-          value={amount}
-          onChange={setAmount}
-          onClose={() => setCalcOpen(false)}
-        />
+        <div className="absolute inset-x-0 bottom-0 z-10 shadow-[0_-8px_24px_rgba(0,0,0,0.35)]">
+          <Calculator
+            value={amount}
+            onChange={setAmount}
+            onClose={() => setCalcOpen(false)}
+          />
+        </div>
       )}
 
       {/* カテゴリ選択シート */}
