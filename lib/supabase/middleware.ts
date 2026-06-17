@@ -30,10 +30,10 @@ export async function updateSession(request: NextRequest) {
     }
   );
 
-  // getClaims/getUser で必ずトークンを検証し、セッションを更新する。
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  // getClaims はトークンを「ローカル検証」する（非対称JWT署名キー有効時）。
+  // getUser と違い毎リクエストの Auth サーバ往復が無くなり、遅延を削減できる。
+  const { data } = await supabase.auth.getClaims();
+  const user = data?.claims ?? null; // 認証済みなら claims（JWTペイロード）、未ログインなら null
 
   const { pathname } = request.nextUrl;
   const isPublic = PUBLIC_PATHS.some((p) => pathname.startsWith(p));

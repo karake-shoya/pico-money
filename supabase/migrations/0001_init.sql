@@ -1,6 +1,6 @@
 -- Pico Money 初期スキーマ
 -- categories（カテゴリマスタ）/ transactions（取引）/ RLS / デフォルトカテゴリseed
--- 全データは auth.uid() に紐付け、自分のデータのみ読み書き可能とする。
+-- 全データは (select auth.uid()) に紐付け、自分のデータのみ読み書き可能とする。
 
 -- =============================================================
 -- categories: カテゴリマスタ
@@ -22,6 +22,10 @@ create unique index if not exists categories_default_unique
   on public.categories (type, name)
   where user_id is null;
 
+-- FK（user_id）のカバリングインデックス（DB linter: unindexed_foreign_keys 対応）
+create index if not exists categories_user_id_idx
+  on public.categories (user_id);
+
 -- =============================================================
 -- transactions: 取引（1取引 = 1カテゴリ）
 -- =============================================================
@@ -40,6 +44,10 @@ create table if not exists public.transactions (
 create index if not exists transactions_user_date_idx
   on public.transactions (user_id, date desc);
 
+-- FK（category_id）のカバリングインデックス（DB linter: unindexed_foreign_keys 対応）
+create index if not exists transactions_category_id_idx
+  on public.transactions (category_id);
+
 -- =============================================================
 -- RLS（Row Level Security）
 -- =============================================================
@@ -50,46 +58,46 @@ alter table public.transactions enable row level security;
 drop policy if exists categories_select on public.categories;
 create policy categories_select on public.categories
   for select
-  using (user_id is null or user_id = auth.uid());
+  using (user_id is null or user_id = (select auth.uid()));
 
 -- categories: INSERT/UPDATE/DELETE は自分定義のみ（デフォルトは編集不可）
 drop policy if exists categories_insert on public.categories;
 create policy categories_insert on public.categories
   for insert
-  with check (user_id = auth.uid());
+  with check (user_id = (select auth.uid()));
 
 drop policy if exists categories_update on public.categories;
 create policy categories_update on public.categories
   for update
-  using (user_id = auth.uid())
-  with check (user_id = auth.uid());
+  using (user_id = (select auth.uid()))
+  with check (user_id = (select auth.uid()));
 
 drop policy if exists categories_delete on public.categories;
 create policy categories_delete on public.categories
   for delete
-  using (user_id = auth.uid());
+  using (user_id = (select auth.uid()));
 
 -- transactions: SELECT/INSERT/UPDATE/DELETE すべて自分のデータのみ
 drop policy if exists transactions_select on public.transactions;
 create policy transactions_select on public.transactions
   for select
-  using (user_id = auth.uid());
+  using (user_id = (select auth.uid()));
 
 drop policy if exists transactions_insert on public.transactions;
 create policy transactions_insert on public.transactions
   for insert
-  with check (user_id = auth.uid());
+  with check (user_id = (select auth.uid()));
 
 drop policy if exists transactions_update on public.transactions;
 create policy transactions_update on public.transactions
   for update
-  using (user_id = auth.uid())
-  with check (user_id = auth.uid());
+  using (user_id = (select auth.uid()))
+  with check (user_id = (select auth.uid()));
 
 drop policy if exists transactions_delete on public.transactions;
 create policy transactions_delete on public.transactions
   for delete
-  using (user_id = auth.uid());
+  using (user_id = (select auth.uid()));
 
 -- =============================================================
 -- デフォルトカテゴリ seed（user_id = NULL / is_default = true）
