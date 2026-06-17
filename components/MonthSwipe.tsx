@@ -8,7 +8,7 @@ import {
   type ReactNode,
 } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { monthLabel, shiftMonth } from "@/lib/format";
+import { currentMonth, monthLabel, shiftMonth } from "@/lib/format";
 
 const THRESHOLD = 50; // この距離(px)以上の横スワイプで月移動
 const INTENT = 10; // 横方向の意図とみなす最小移動量
@@ -32,20 +32,30 @@ export function MonthSwipe({
 
   const [dx, setDx] = useState(0); // 表示追従用
   const [dragging, setDragging] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const areaRef = useRef<HTMLDivElement>(null);
 
   // 月移動。最新の月/クエリを参照できるよう ref 経由で呼ぶ。
   // ref の更新はレンダー後（effect 内）に行う。
-  const goRef = useRef<(delta: number) => void>(() => {});
+  const goRef = useRef<(delta: number) => void>(() => {}); // 相対移動
+  const goToRef = useRef<(target: string) => void>(() => {}); // 絶対移動
   useEffect(() => {
-    goRef.current = (delta: number) => {
+    const navigate = (target: string) => {
       const params = new URLSearchParams(searchParams);
-      params.set("month", shiftMonth(month, delta));
+      params.set("month", target);
       startTransition(() => {
         router.replace(`${pathname}?${params.toString()}`, { scroll: false });
       });
     };
+    goRef.current = (delta: number) => navigate(shiftMonth(month, delta));
+    goToRef.current = navigate;
   });
+
+  // 当月判定はクライアントのローカル時刻に依存するため、マウント後に行う
+  // （SSR とのハイドレーション不一致を避ける）。
+  // eslint-disable-next-line react-hooks/set-state-in-effect
+  useEffect(() => setMounted(true), []);
+  const showToday = mounted && month !== currentMonth();
 
   useEffect(() => {
     const el = areaRef.current;
@@ -132,9 +142,22 @@ export function MonthSwipe({
         >
           ‹
         </button>
-        <span className={`text-lg font-bold ${isPending ? "opacity-50" : ""}`}>
-          {monthLabel(month)}
-        </span>
+        <div className="flex flex-col items-center">
+          <span
+            className={`text-lg font-bold ${isPending ? "opacity-50" : ""}`}
+          >
+            {monthLabel(month)}
+          </span>
+          {showToday && (
+            <button
+              type="button"
+              onClick={() => goToRef.current(currentMonth())}
+              className="mt-0.5 rounded-full px-2 py-0.5 text-xs font-medium text-[var(--color-brand)] active:bg-[var(--color-bg)]"
+            >
+              今月に戻る
+            </button>
+          )}
+        </div>
         <button
           type="button"
           onClick={() => goRef.current(1)}
