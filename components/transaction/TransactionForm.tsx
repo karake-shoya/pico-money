@@ -39,7 +39,8 @@ export function TransactionForm({ categories, initial, onDone }: Props) {
     initial?.category_id ?? ""
   );
   const [amount, setAmount] = useState<number>(initial?.amount ?? 0);
-  const [calcOpen, setCalcOpen] = useState(false);
+  // 新規登録時は電卓を開いた状態で開始し、すぐに数値入力できるようにする。
+  const [calcOpen, setCalcOpen] = useState(!initial);
 
   // 選択中の type に応じてカテゴリを絞り込み
   const visible = useMemo(
@@ -84,7 +85,9 @@ export function TransactionForm({ categories, initial, onDone }: Props) {
     state && "error" in state ? state.error : null;
 
   return (
-    <form action={formAction} className="space-y-5">
+    <form action={formAction} className="flex min-h-0 flex-1 flex-col">
+      {/* 入力欄（上部・スクロール領域） */}
+      <div className="min-h-0 flex-1 space-y-5 overflow-y-auto px-5 pb-4">
       {/* 収入/支出タブ（タップで切替） */}
       <input type="hidden" name="type" value={type} />
       <div className="-mx-5 -mt-1 grid grid-cols-2 border-b border-[var(--color-line)]">
@@ -113,7 +116,7 @@ export function TransactionForm({ categories, initial, onDone }: Props) {
         })}
       </div>
 
-      {/* 金額（タップで電卓を表示） */}
+      {/* 金額（タップで電卓を開閉。電卓の入力がここに即時反映される） */}
       <div>
         <span className="mb-1 block text-sm text-[var(--color-muted)]">
           金額（円）
@@ -121,12 +124,16 @@ export function TransactionForm({ categories, initial, onDone }: Props) {
         <input type="hidden" name="amount" value={amount > 0 ? amount : ""} />
         <button
           type="button"
-          onClick={() => setCalcOpen(true)}
-          className="flex h-12 w-full items-center rounded-xl border border-[var(--color-line)] bg-[var(--color-bg)] px-4 text-left transition active:scale-[0.99]"
+          onClick={() => setCalcOpen((v) => !v)}
+          className={`flex h-14 w-full items-center rounded-xl border bg-[var(--color-bg)] px-4 text-left transition active:scale-[0.99] ${
+            calcOpen
+              ? "border-[var(--color-brand)]"
+              : "border-[var(--color-line)]"
+          }`}
         >
-          <span className="mr-1 text-lg text-[var(--color-muted)]">¥</span>
+          <span className="mr-1 text-xl text-[var(--color-muted)]">¥</span>
           <span
-            className={`tabular w-full text-right text-xl font-semibold ${
+            className={`tabular w-full text-right text-3xl font-bold ${
               amount > 0 ? "text-[var(--color-ink)]" : "text-[var(--color-muted)]"
             }`}
           >
@@ -134,17 +141,6 @@ export function TransactionForm({ categories, initial, onDone }: Props) {
           </span>
         </button>
       </div>
-
-      {calcOpen && (
-        <Calculator
-          initial={amount}
-          onConfirm={(value) => {
-            setAmount(value);
-            setCalcOpen(false);
-          }}
-          onClose={() => setCalcOpen(false)}
-        />
-      )}
 
       {/* 日付 */}
       <label className="block">
@@ -214,18 +210,31 @@ export function TransactionForm({ categories, initial, onDone }: Props) {
           {errorMsg}
         </p>
       )}
+      </div>
 
-      <SaveButton isEdit={isEdit} />
+      {/* 保存フッター（常時表示） */}
+      <div className="shrink-0 space-y-2 border-t border-[var(--color-line)] px-5 py-3">
+        <SaveButton isEdit={isEdit} />
 
-      {isEdit && (
-        <button
-          type="button"
-          onClick={handleDelete}
-          disabled={isDeleting}
-          className="h-11 w-full rounded-xl text-sm font-semibold text-[var(--color-expense)] transition active:scale-[0.99] disabled:opacity-60"
-        >
-          {isDeleting ? "削除中…" : "この取引を削除"}
-        </button>
+        {isEdit && (
+          <button
+            type="button"
+            onClick={handleDelete}
+            disabled={isDeleting}
+            className="h-11 w-full rounded-xl text-sm font-semibold text-[var(--color-expense)] transition active:scale-[0.99] disabled:opacity-60"
+          >
+            {isDeleting ? "削除中…" : "この取引を削除"}
+          </button>
+        )}
+      </div>
+
+      {/* 電卓パネル（下部ドッキング） */}
+      {calcOpen && (
+        <Calculator
+          value={amount}
+          onChange={setAmount}
+          onClose={() => setCalcOpen(false)}
+        />
       )}
     </form>
   );

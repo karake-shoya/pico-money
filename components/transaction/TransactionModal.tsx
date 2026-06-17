@@ -89,8 +89,8 @@ export function TransactionModalProvider({
             onClick={close}
             className="absolute inset-0 bg-black/40"
           />
-          <div className="relative mx-auto max-h-[90dvh] w-full max-w-[480px] overflow-y-auto rounded-t-3xl bg-[var(--color-surface)] px-5 pb-[calc(24px+env(safe-area-inset-bottom))] pt-3">
-            <div className="sticky top-0 -mx-5 mb-2 bg-[var(--color-surface)] px-5 pb-3 pt-1">
+          <div className="relative mx-auto flex max-h-[90dvh] w-full max-w-[480px] flex-col overflow-hidden rounded-t-3xl bg-[var(--color-surface)] pb-[env(safe-area-inset-bottom)]">
+            <div className="shrink-0 px-5 pb-2 pt-3">
               <div className="mx-auto mb-3 h-1.5 w-10 rounded-full bg-[var(--color-line)]" />
               <div className="flex items-center justify-between">
                 <h2 className="text-lg font-bold">
