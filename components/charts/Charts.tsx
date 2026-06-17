@@ -5,23 +5,9 @@ import Link from "next/link";
 import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from "recharts";
 import { useMonth } from "@/components/MonthProvider";
 import { useHorizontalSwipe } from "@/components/useHorizontalSwipe";
-import { categoryIcon } from "@/lib/category-icon";
+import { CategoryBadge, categoryColor } from "@/lib/category-icon";
 import { formatYen, shiftMonth } from "@/lib/format";
 import type { CategorySlice, TxType } from "@/lib/types";
-
-// 円グラフ用のカラーパレット
-const PIE_COLORS = [
-  "#4f46e5",
-  "#f59e0b",
-  "#10b981",
-  "#ef4444",
-  "#8b5cf6",
-  "#ec4899",
-  "#14b8a6",
-  "#f97316",
-  "#6366f1",
-  "#84cc16",
-];
 
 type Props = {
   expenseSlices: CategorySlice[];
@@ -101,8 +87,8 @@ export function Charts({ expenseSlices, incomeSlices }: Props) {
                     paddingAngle={2}
                     stroke="none"
                   >
-                    {pieData.map((_, i) => (
-                      <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />
+                    {pieData.map((d, i) => (
+                      <Cell key={i} fill={categoryColor(d.name)} />
                     ))}
                   </Pie>
                   <Tooltip formatter={(v) => formatYen(Number(v))} />
@@ -117,21 +103,17 @@ export function Charts({ expenseSlices, incomeSlices }: Props) {
 
             {/* カテゴリ別ランキング（金額と割合）。行タップで入出金へドリルダウン。 */}
             <ul className="mt-3 space-y-1">
-              {pieData.map((d, i) => {
-                const Icon = categoryIcon(d.name);
+              {pieData.map((d) => {
                 return (
                   <li key={d.categoryId}>
                     <Link
                       href={`/transactions?month=${month}&cat=${d.categoryId}`}
                       className="flex items-center gap-2.5 rounded-lg py-1.5 text-sm active:bg-[var(--color-bg)]"
                     >
-                      <span
-                        className="h-2.5 w-2.5 shrink-0 rounded-full"
-                        style={{ background: PIE_COLORS[i % PIE_COLORS.length] }}
-                      />
-                      <Icon
-                        className="h-4 w-4 shrink-0 text-[var(--color-muted)]"
-                        strokeWidth={1.8}
+                      <CategoryBadge
+                        name={d.name}
+                        className="h-7 w-7"
+                        iconClassName="h-4 w-4"
                       />
                       <span className="flex-1 truncate">{d.name}</span>
                       <span className="tabular text-[var(--color-muted)]">

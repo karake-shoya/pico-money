@@ -13,13 +13,13 @@ export const metadata: Metadata = {
   applicationName: "Pico Money",
   appleWebApp: {
     capable: true,
-    statusBarStyle: "default",
+    statusBarStyle: "black-translucent",
     title: "Pico Money",
   },
 };
 
 export const viewport: Viewport = {
-  themeColor: "#4f46e5",
+  themeColor: "#0f1115",
   width: "device-width",
   initialScale: 1,
   // 拡大を妨げない（アクセシビリティ: WCAG 1.4.4）

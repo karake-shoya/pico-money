@@ -3,7 +3,7 @@
 import { useRef, useState, useTransition } from "react";
 import { useTransactionModal } from "./TransactionModal";
 import { deleteTransaction } from "@/lib/actions/transactions";
-import { CategoryIcon } from "@/lib/category-icon";
+import { CategoryBadge } from "@/lib/category-icon";
 import { dateLabel, formatSignedYen } from "@/lib/format";
 import type { TransactionWithCategory } from "@/lib/types";
 
@@ -76,9 +76,7 @@ export function TransactionItem({ tx }: { tx: TransactionWithCategory }) {
         }}
         className="relative flex cursor-pointer items-center gap-3 bg-[var(--color-surface)] px-4 py-3"
       >
-        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[var(--color-bg)] text-[var(--color-ink)]">
-          <CategoryIcon name={tx.category?.name} className="h-5 w-5" />
-        </span>
+        <CategoryBadge name={tx.category?.name} />
         <div className="min-w-0 flex-1">
           <p className="truncate font-medium">
             {tx.category?.name ?? "不明なカテゴリ"}

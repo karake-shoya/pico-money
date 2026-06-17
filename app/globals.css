@@ -3,17 +3,18 @@
 /* Pico Money デザイントークン
    ミニマル・モバイルファースト。基準幅 480px。 */
 @theme inline {
-  /* クリーン・モノトーン：白基調＋極淡グレー、インディゴ単色アクセント */
-  --color-bg: #f6f7f9;
-  --color-surface: #ffffff;
-  --color-ink: #0f1115;
-  --color-muted: #6b7280;
-  --color-line: #e8eaed;
+  /* ダークテーマ（既定）：深いグレー基調＋カード面を一段明るく、インディゴアクセント。
+     ダーク背景でも視認できるよう、アクセント/収支色はやや明るめの階調を採用。 */
+  --color-bg: #0f1115; /* アプリ背景（最暗） */
+  --color-surface: #1a1d24; /* カード・ヘッダー面（一段明るい） */
+  --color-ink: #f2f4f7; /* 主要テキスト */
+  --color-muted: #9aa1ad; /* 副次テキスト */
+  --color-line: #2a2e37; /* 罫線・境界 */
 
-  --color-brand: #4f46e5; /* indigo-600 */
-  --color-brand-soft: #eef0fe; /* アクセントの淡色面 */
-  --color-income: #059669; /* emerald-600 */
-  --color-expense: #e11d48; /* rose-600 */
+  --color-brand: #6366f1; /* indigo-500（暗背景で映える階調） */
+  --color-brand-soft: #232544; /* アクセントの淡色面（ダーク版） */
+  --color-income: #34d399; /* emerald-400 */
+  --color-expense: #fb7185; /* rose-400 */
 
   --font-sans: var(--font-geist-sans), system-ui, -apple-system, "Hiragino Kaku Gothic ProN", "Yu Gothic", sans-serif;
 
@@ -22,6 +23,8 @@
 
 html {
   height: 100%;
+  /* ネイティブ部品（month ピッカー・スクロールバー等）もダーク前提で描画させる */
+  color-scheme: dark;
 }
 
 body {
