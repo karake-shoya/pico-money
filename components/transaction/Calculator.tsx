@@ -2,25 +2,21 @@
 
 import { useState } from "react";
 import { ChevronDown, Delete } from "lucide-react";
-
-type Op = "+" | "-" | "×" | "÷";
-
-function calc(a: number, op: Op, b: number): number {
-  switch (op) {
-    case "+":
-      return a + b;
-    case "-":
-      return a - b;
-    case "×":
-      return a * b;
-    case "÷":
-      return b === 0 ? 0 : a / b;
-  }
-}
+import {
+  type CalcOp,
+  type CalcState,
+  calcValue,
+  initCalc,
+  backspace as reduceBackspace,
+  chooseOp as reduceChooseOp,
+  clearAll as reduceClearAll,
+  equals as reduceEquals,
+  inputDigit as reduceInputDigit,
+} from "@/lib/calculator";
 
 // 金額入力用の電卓パネル（モーダル下部にドッキング）。
+// 計算ロジックは lib/calculator の純粋関数に委譲し、ここでは状態保持と描画のみ行う。
 // 入力のたびに onChange で親へ値を反映し、上部の金額欄がリアルタイムに更新される。
-// 携帯電卓と同様、保留中の演算子を1つ持つ逐次計算方式。金額は整数（円）へ丸める。
 export function Calculator({
   value,
   onChange,
@@ -30,76 +26,27 @@ export function Calculator({
   onChange: (value: number) => void;
   onClose: () => void;
 }) {
-  const [entry, setEntry] = useState<string>(value > 0 ? String(value) : "0");
-  const [acc, setAcc] = useState<number | null>(null); // 累積値
-  const [op, setOp] = useState<Op | null>(null); // 保留中の演算子
-  const [fresh, setFresh] = useState(true); // 次の数字入力で entry を置き換えるか
+  const [state, setState] = useState<CalcState>(() => initCalc(value));
+  const { acc, op } = state;
 
-  // 親へ整数（円）で通知。マイナス・小数は丸めて 0 未満は 0 に。
-  const report = (v: number) => onChange(Math.max(0, Math.round(v)));
-
-  function inputDigit(d: string) {
-    let next: string;
-    if (fresh) {
-      next = d === "00" ? "0" : d;
-      setFresh(false);
-    } else if (entry === "0") {
-      next = d === "00" ? "0" : d;
-    } else if (entry.replace("-", "").length >= 12) {
-      next = entry; // 桁数上限
-    } else {
-      next = entry + d;
-    }
-    setEntry(next);
-    report(Number(next));
+  // 状態遷移を適用し、新しい金額を親へ通知する。
+  function dispatch(next: CalcState) {
+    setState(next);
+    onChange(calcValue(next));
   }
 
-  function backspace() {
-    if (fresh) return;
-    const sliced = entry.slice(0, -1);
-    const next = sliced === "" || sliced === "-" ? "0" : sliced;
-    setEntry(next);
-    report(Number(next));
-  }
+  const inputDigit = (d: string) => dispatch(reduceInputDigit(state, d));
+  const backspace = () => dispatch(reduceBackspace(state));
+  const clearAll = () => dispatch(reduceClearAll(state));
+  const chooseOp = (nextOp: CalcOp) => dispatch(reduceChooseOp(state, nextOp));
+  const equals = () => dispatch(reduceEquals(state));
 
-  function clearAll() {
-    setEntry("0");
-    setAcc(null);
-    setOp(null);
-    setFresh(true);
-    report(0);
-  }
-
-  function chooseOp(nextOp: Op) {
-    const current = Number(entry);
-    if (acc !== null && op && !fresh) {
-      const result = calc(acc, op, current);
-      setAcc(result);
-      setEntry(String(result));
-      report(result);
-    } else if (acc === null) {
-      setAcc(current);
-    }
-    setOp(nextOp);
-    setFresh(true);
-  }
-
-  function equals() {
-    const current = Number(entry);
-    if (acc !== null && op) {
-      const result = calc(acc, op, current);
-      setEntry(String(result));
-      report(result);
-    }
-    setAcc(null);
-    setOp(null);
-    setFresh(true);
-  }
-
+  // h-11 は数字/演算子キー用。row-span-2 の「=」は keyBase に含めず縦2マスへ伸ばす。
   const keyBase =
-    "flex h-11 items-center justify-center rounded-lg text-lg font-semibold transition active:scale-95";
-  const numKey = `${keyBase} bg-[var(--color-bg)] text-[var(--color-ink)]`;
-  const opKey = `${keyBase} bg-[var(--color-brand-soft)] text-[var(--color-brand)]`;
+    "flex items-center justify-center rounded-lg text-lg font-semibold transition active:scale-95";
+  const stdKey = `${keyBase} h-11`;
+  const numKey = `${stdKey} bg-[var(--color-bg)] text-[var(--color-ink)]`;
+  const opKey = `${stdKey} bg-[var(--color-brand-soft)] text-[var(--color-brand)]`;
 
   return (
     <div className="shrink-0 border-t border-[var(--color-line)] bg-[var(--color-surface)] px-4 pb-2 pt-1.5">
@@ -126,7 +73,7 @@ export function Calculator({
         <button
           type="button"
           onClick={clearAll}
-          className={`${keyBase} bg-[var(--color-bg)] text-[var(--color-expense)]`}
+          className={`${stdKey} bg-[var(--color-bg)] text-[var(--color-expense)]`}
         >
           C
         </button>
@@ -134,7 +81,7 @@ export function Calculator({
           type="button"
           onClick={backspace}
           aria-label="一文字削除"
-          className={`${keyBase} bg-[var(--color-bg)] text-[var(--color-muted)]`}
+          className={`${stdKey} bg-[var(--color-bg)] text-[var(--color-muted)]`}
         >
           <Delete className="h-5 w-5" />
         </button>
@@ -172,7 +119,7 @@ export function Calculator({
         <button
           type="button"
           onClick={equals}
-          className={`${keyBase} row-span-2 h-auto bg-[var(--color-brand)] text-white`}
+          className={`${keyBase} row-span-2 bg-[var(--color-brand)] text-white`}
         >
           =
         </button>
