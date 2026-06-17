@@ -3,6 +3,7 @@
 import { memo, useEffect, useRef, useState } from "react";
 import { ArrowDownLeft, ArrowUpRight, PiggyBank } from "lucide-react";
 import { useMonth } from "@/components/MonthProvider";
+import { useHorizontalSwipe } from "@/components/useHorizontalSwipe";
 import {
   currentMonth,
   formatSignedYen,
@@ -12,8 +13,6 @@ import {
 } from "@/lib/format";
 import type { MonthlySummary } from "@/lib/types";
 
-const THRESHOLD = 50; // この距離(px)以上の横スワイプで月移動
-const INTENT = 10; // 横方向の意図とみなす最小移動量
 const EMPTY: MonthlySummary = { income: 0, expense: 0, balance: 0, savingsRate: 0 };
 
 // 1ヶ月分の収支サマリーカード（差額・支出率ゲージ・収入/支出・貯蓄率）。
@@ -137,13 +136,6 @@ export function HomeCarousel({
     setDx(delta > 0 ? -w : w); // 翌月は左へ、前月は右へ
   };
 
-  // スワイプの listener は一度だけ登録し（再バインド回避）、最新の commit / animating
-  // を ref 経由で参照する。
-  const commitRef = useRef(commit);
-  commitRef.current = commit;
-  const animatingRef = useRef(animating);
-  animatingRef.current = animating;
-
   const handleTransitionEnd = () => {
     if (!animating) return;
     const delta = dx < 0 ? 1 : -1; // 確定時の dx は commit が入れた符号付き目標値
@@ -166,78 +158,17 @@ export function HomeCarousel({
   const prev = shiftMonth(month, -1);
   const next = shiftMonth(month, 1);
 
-  // スワイプ判定。ブラウザ/OS の横スワイプ（戻る/進む）に奪われないよう
-  // 非パッシブの touchmove を直接登録し、横方向と判定した時点で preventDefault する。
-  useEffect(() => {
-    const el = areaRef.current;
-    if (!el) return;
-
-    let startX = 0;
-    let startY = 0;
-    let active = false;
-    let horizontal = false;
-    let moved = 0;
-
-    const begin = (x: number, y: number) => {
-      if (animatingRef.current) return;
-      startX = x;
-      startY = y;
-      active = true;
-      horizontal = false;
-      moved = 0;
-      setDragging(true);
-    };
-    const move = (x: number, y: number, e: Event) => {
-      if (!active) return;
-      const ddx = x - startX;
-      const ddy = y - startY;
-      if (!horizontal && Math.abs(ddx) > Math.abs(ddy) && Math.abs(ddx) > INTENT) {
-        horizontal = true;
-      }
-      if (horizontal) {
-        if (e.cancelable) e.preventDefault();
-        moved = ddx;
-        setDx(ddx);
-      }
-    };
-    const end = () => {
-      if (!active) return;
-      active = false;
+  // スワイプ：指追従(onMove)＋確定でスライド(commit)。アニメ中は無効。
+  useHorizontalSwipe(areaRef, {
+    enabled: () => !animating,
+    onStart: () => setDragging(true),
+    onMove: (ddx) => setDx(ddx),
+    onEnd: (committed, dir) => {
       setDragging(false);
-      const m = moved;
-      moved = 0;
-      if (Math.abs(m) > THRESHOLD) {
-        commitRef.current(m < 0 ? 1 : -1); // 左スワイプ=翌月 / 右スワイプ=前月
-      } else {
-        setDx(0); // 閾値未満は中央へ戻す
-      }
-    };
-
-    const onTouchStart = (e: TouchEvent) =>
-      begin(e.touches[0].clientX, e.touches[0].clientY);
-    const onTouchMove = (e: TouchEvent) =>
-      move(e.touches[0].clientX, e.touches[0].clientY, e);
-    const onMouseDown = (e: MouseEvent) => begin(e.clientX, e.clientY);
-    const onMouseMove = (e: MouseEvent) => move(e.clientX, e.clientY, e);
-
-    el.addEventListener("touchstart", onTouchStart, { passive: true });
-    el.addEventListener("touchmove", onTouchMove, { passive: false });
-    el.addEventListener("touchend", end);
-    el.addEventListener("touchcancel", end);
-    el.addEventListener("mousedown", onMouseDown);
-    window.addEventListener("mousemove", onMouseMove);
-    window.addEventListener("mouseup", end);
-
-    return () => {
-      el.removeEventListener("touchstart", onTouchStart);
-      el.removeEventListener("touchmove", onTouchMove);
-      el.removeEventListener("touchend", end);
-      el.removeEventListener("touchcancel", end);
-      el.removeEventListener("mousedown", onMouseDown);
-      window.removeEventListener("mousemove", onMouseMove);
-      window.removeEventListener("mouseup", end);
-    };
-  }, []);
+      if (committed && dir) commit(dir);
+      else setDx(0); // 閾値未満は中央へ戻す
+    },
+  });
 
   const transition =
     noTransition || dragging

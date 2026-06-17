@@ -1,10 +1,5 @@
 // 取引データの集計（純粋関数）。DB アクセスから分離し、単体テスト可能にする。
-import type {
-  CategorySlice,
-  MonthlyBar,
-  MonthlySummary,
-  TxType,
-} from "@/lib/types";
+import type { CategorySlice, MonthlySummary, TxType } from "@/lib/types";
 
 // 集計入力の最小形（金額と種別）
 export type AmountRow = { type: TxType; amount: number };
@@ -24,23 +19,6 @@ export function summarize(rows: AmountRow[]): MonthlySummary {
 
 // 日付付きの集計入力
 export type DatedRow = { date: string; type: TxType; amount: number };
-
-// 指定月リスト（古い順）の月別収支。範囲外の行は無視。
-export function aggregateMonthlyBars(
-  rows: DatedRow[],
-  months: string[]
-): MonthlyBar[] {
-  const map = new Map<string, MonthlyBar>();
-  for (const m of months) map.set(m, { month: m, income: 0, expense: 0 });
-  for (const r of rows) {
-    const key = r.date.slice(0, 7);
-    const bar = map.get(key);
-    if (!bar) continue;
-    if (r.type === "income") bar.income += r.amount;
-    else bar.expense += r.amount;
-  }
-  return months.map((m) => map.get(m)!);
-}
 
 // 指定月リストそれぞれの月次サマリーを算出（範囲外の行は無視）。
 // カルーセルの先読み用：複数月をまとめてクライアントへ渡す。

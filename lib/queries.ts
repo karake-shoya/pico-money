@@ -2,10 +2,9 @@
 import { unstable_cache } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
 import { createAnonClient } from '@/lib/supabase/anon';
-import { lastNMonths, monthRange } from '@/lib/format';
+import { monthRange } from '@/lib/format';
 import {
   aggregateCategoryBreakdown,
-  aggregateMonthlyBars,
   aggregateMonthlySummaries,
   summarize,
   type CategoryRow,
@@ -13,7 +12,6 @@ import {
 import type {
   Category,
   CategorySlice,
-  MonthlyBar,
   MonthlySummary,
   TransactionWithCategory,
   TxType,
@@ -109,15 +107,6 @@ export async function getMonthlySummaries(
   months: string[]
 ): Promise<Record<string, MonthlySummary>> {
   return aggregateMonthlySummaries(await fetchDatedRows(months), months);
-}
-
-// 直近6ヶ月の月別収支（棒グラフ用、古い順）
-export async function getMonthlyBars(
-  baseMonth: string,
-  n = 6
-): Promise<MonthlyBar[]> {
-  const months = lastNMonths(baseMonth, n);
-  return aggregateMonthlyBars(await fetchDatedRows(months), months);
 }
 
 // カテゴリ別内訳（円グラフ用）。選択月・指定 type の合計を金額降順で。

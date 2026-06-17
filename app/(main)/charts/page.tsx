@@ -1,11 +1,8 @@
 import { Charts } from "@/components/charts/Charts";
-import {
-  getCategoryBreakdown,
-  getMonthlyBars,
-} from "@/lib/queries";
+import { getCategoryBreakdown } from "@/lib/queries";
 import { monthLabel, normalizeMonth } from "@/lib/format";
 
-// グラフ画面。月別収支（過去6ヶ月）とカテゴリ別ドーナツ。
+// グラフ画面。カテゴリ別ドーナツ（横スワイプで月移動）。
 export default async function ChartsPage({
   searchParams,
 }: {
@@ -15,8 +12,7 @@ export default async function ChartsPage({
   const month = normalizeMonth(monthParam);
 
   // 収入/支出の切替はクライアント側で行うため、両方を取得して渡す。
-  const [bars, expenseSlices, incomeSlices] = await Promise.all([
-    getMonthlyBars(month, 6),
+  const [expenseSlices, incomeSlices] = await Promise.all([
     getCategoryBreakdown(month, "expense"),
     getCategoryBreakdown(month, "income"),
   ]);
@@ -26,12 +22,7 @@ export default async function ChartsPage({
       <p className="text-sm text-[var(--color-muted)]">
         {monthLabel(month)}の家計簿
       </p>
-      <Charts
-        month={month}
-        bars={bars}
-        expenseSlices={expenseSlices}
-        incomeSlices={incomeSlices}
-      />
+      <Charts expenseSlices={expenseSlices} incomeSlices={incomeSlices} />
     </div>
   );
 }
