@@ -1,4 +1,4 @@
-import { TransactionItem } from "@/components/transaction/TransactionItem";
+import { TransactionList } from "@/components/transaction/TransactionList";
 import { getTransactionsForMonth } from "@/lib/queries";
 import { monthLabel, normalizeMonth } from "@/lib/format";
 
@@ -30,11 +30,7 @@ export default async function TransactionsPage({
           下の「＋」から登録できます。
         </div>
       ) : (
-        <ul className="space-y-2">
-          {transactions.map((tx) => (
-            <TransactionItem key={tx.id} tx={tx} />
-          ))}
-        </ul>
+        <TransactionList transactions={transactions} />
       )}
 
       <p className="px-1 text-center text-xs text-[var(--color-muted)]">
