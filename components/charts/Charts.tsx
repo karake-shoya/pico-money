@@ -2,7 +2,7 @@
 
 import { useRef, useState } from "react";
 import Link from "next/link";
-import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from "recharts";
+import { Cell, Pie, PieChart, ResponsiveContainer } from "recharts";
 import { useMonth } from "@/components/MonthProvider";
 import { useHorizontalSwipe } from "@/components/useHorizontalSwipe";
 import { CategoryBadge, categoryColor } from "@/lib/category-icon";
@@ -73,7 +73,8 @@ export function Charts({ expenseSlices, incomeSlices }: Props) {
           </p>
         ) : (
           <>
-            <div className="relative h-52 w-full">
+            {/* グラフはタップ無効（pointer-events-none）。タッチは下層のスワイプ領域へ通す。 */}
+            <div className="pointer-events-none relative h-52 w-full">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie
@@ -91,7 +92,6 @@ export function Charts({ expenseSlices, incomeSlices }: Props) {
                       <Cell key={i} fill={categoryColor(d.name)} />
                     ))}
                   </Pie>
-                  <Tooltip formatter={(v) => formatYen(Number(v))} />
                 </PieChart>
               </ResponsiveContainer>
               {/* 中央の合計表示 */}

@@ -11,6 +11,7 @@ import {
 import { categoryColor, categoryIcon } from "@/lib/category-icon";
 import { todayDate } from "@/lib/format";
 import type { Category, TransactionWithCategory, TxType } from "@/lib/types";
+import { Calculator } from "./Calculator";
 
 type Props = {
   categories: Category[];
@@ -37,6 +38,9 @@ export function TransactionForm({ categories, initial, onDone }: Props) {
   const [categoryId, setCategoryId] = useState<string>(
     initial?.category_id ?? ""
   );
+  const [amount, setAmount] = useState<number>(initial?.amount ?? 0);
+  // 新規登録時は電卓を開いた状態で開始し、すぐに数値入力できるようにする。
+  const [calcOpen, setCalcOpen] = useState(!initial);
 
   // 選択中の type に応じてカテゴリを絞り込み
   const visible = useMemo(
@@ -81,54 +85,62 @@ export function TransactionForm({ categories, initial, onDone }: Props) {
     state && "error" in state ? state.error : null;
 
   return (
-    <form action={formAction} className="space-y-5">
-      {/* 収入/支出トグル */}
+    <form action={formAction} className="flex min-h-0 flex-1 flex-col">
+      {/* 入力欄（上部・スクロール領域） */}
+      <div className="min-h-0 flex-1 space-y-5 overflow-y-auto px-5 pb-4">
+      {/* 収入/支出タブ（タップで切替） */}
       <input type="hidden" name="type" value={type} />
-      <div className="grid grid-cols-2 gap-2 rounded-xl bg-[var(--color-bg)] p-1">
-        <button
-          type="button"
-          onClick={() => changeType("expense")}
-          className={`h-11 rounded-lg text-sm font-semibold transition ${
-            type === "expense"
-              ? "bg-[var(--color-expense)] text-white"
-              : "text-[var(--color-muted)]"
-          }`}
-        >
-          支出
-        </button>
-        <button
-          type="button"
-          onClick={() => changeType("income")}
-          className={`h-11 rounded-lg text-sm font-semibold transition ${
-            type === "income"
-              ? "bg-[var(--color-income)] text-white"
-              : "text-[var(--color-muted)]"
-          }`}
-        >
-          収入
-        </button>
+      <div className="-mx-5 -mt-1 grid grid-cols-2 border-b border-[var(--color-line)]">
+        {(["expense", "income"] as const).map((t) => {
+          const active = type === t;
+          const activeColor =
+            t === "expense" ? "var(--color-expense)" : "var(--color-income)";
+          return (
+            <button
+              key={t}
+              type="button"
+              onClick={() => changeType(t)}
+              className="relative h-12 text-sm font-semibold transition"
+              style={{
+                color: active ? activeColor : "var(--color-muted)",
+              }}
+            >
+              {t === "expense" ? "支出" : "収入"}
+              {/* アクティブ下線インジケータ */}
+              <span
+                className="absolute inset-x-0 -bottom-px h-0.5 rounded-full"
+                style={{ background: active ? activeColor : "transparent" }}
+              />
+            </button>
+          );
+        })}
       </div>
 
-      {/* 金額 */}
-      <label className="block">
+      {/* 金額（タップで電卓を開閉。電卓の入力がここに即時反映される） */}
+      <div>
         <span className="mb-1 block text-sm text-[var(--color-muted)]">
           金額（円）
         </span>
-        <div className="flex items-center rounded-xl border border-[var(--color-line)] bg-[var(--color-bg)] px-4">
-          <span className="mr-1 text-lg text-[var(--color-muted)]">¥</span>
-          <input
-            type="number"
-            name="amount"
-            required
-            min={1}
-            step={1}
-            inputMode="numeric"
-            defaultValue={initial?.amount ?? ""}
-            placeholder="0"
-            className="tabular h-12 w-full bg-transparent text-right text-xl font-semibold outline-none"
-          />
-        </div>
-      </label>
+        <input type="hidden" name="amount" value={amount > 0 ? amount : ""} />
+        <button
+          type="button"
+          onClick={() => setCalcOpen((v) => !v)}
+          className={`flex h-14 w-full items-center rounded-xl border bg-[var(--color-bg)] px-4 text-left transition active:scale-[0.99] ${
+            calcOpen
+              ? "border-[var(--color-brand)]"
+              : "border-[var(--color-line)]"
+          }`}
+        >
+          <span className="mr-1 text-xl text-[var(--color-muted)]">¥</span>
+          <span
+            className={`tabular w-full text-right text-3xl font-bold ${
+              amount > 0 ? "text-[var(--color-ink)]" : "text-[var(--color-muted)]"
+            }`}
+          >
+            {amount > 0 ? amount.toLocaleString("ja-JP") : "0"}
+          </span>
+        </button>
+      </div>
 
       {/* 日付 */}
       <label className="block">
@@ -198,18 +210,31 @@ export function TransactionForm({ categories, initial, onDone }: Props) {
           {errorMsg}
         </p>
       )}
+      </div>
 
-      <SaveButton isEdit={isEdit} />
+      {/* 保存フッター（常時表示） */}
+      <div className="shrink-0 space-y-2 border-t border-[var(--color-line)] px-5 py-3">
+        <SaveButton isEdit={isEdit} />
 
-      {isEdit && (
-        <button
-          type="button"
-          onClick={handleDelete}
-          disabled={isDeleting}
-          className="h-11 w-full rounded-xl text-sm font-semibold text-[var(--color-expense)] transition active:scale-[0.99] disabled:opacity-60"
-        >
-          {isDeleting ? "削除中…" : "この取引を削除"}
-        </button>
+        {isEdit && (
+          <button
+            type="button"
+            onClick={handleDelete}
+            disabled={isDeleting}
+            className="h-11 w-full rounded-xl text-sm font-semibold text-[var(--color-expense)] transition active:scale-[0.99] disabled:opacity-60"
+          >
+            {isDeleting ? "削除中…" : "この取引を削除"}
+          </button>
+        )}
+      </div>
+
+      {/* 電卓パネル（下部ドッキング） */}
+      {calcOpen && (
+        <Calculator
+          value={amount}
+          onChange={setAmount}
+          onClose={() => setCalcOpen(false)}
+        />
       )}
     </form>
   );
