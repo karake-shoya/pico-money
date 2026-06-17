@@ -1,26 +1,23 @@
 "use client";
 
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { useTransition } from "react";
+import { usePathname } from "next/navigation";
 import { LogOut, Wallet } from "lucide-react";
-import { normalizeMonth } from "@/lib/format";
+import { useMonth } from "@/components/MonthProvider";
 import { logout } from "@/lib/actions/auth";
 
-// 全ページ共通ヘッダー。月セレクタで ?month を切り替え、各ページが同じ月を参照する。
-export function AppHeader() {
-  const router = useRouter();
-  const pathname = usePathname();
-  const searchParams = useSearchParams();
-  const [isPending, startTransition] = useTransition();
+const HOME_PATH = "/"; // カルーセルで先読み表示するページ（月変更で再取得不要）
 
-  const month = normalizeMonth(searchParams.get("month"));
+// 全ページ共通ヘッダー。月セレクタで共有の月(MonthContext)を切り替える。
+// ホームはカルーセルが先読みデータで反映するためサーバー再取得は不要(navigate:false)。
+// グラフ/明細(Server Component)はデータ再取得が必要なため navigate:true。
+export function AppHeader() {
+  const pathname = usePathname();
+  const { month, setMonth } = useMonth();
 
   function onChangeMonth(value: string) {
-    const params = new URLSearchParams(searchParams);
-    params.set("month", value);
-    startTransition(() => {
-      router.replace(`${pathname}?${params.toString()}`);
-    });
+    // ホームはカルーセルが先読みデータで即反映するため再取得不要。
+    // 他ページ(Server Component)は月変更でデータ再取得が必要。
+    setMonth(value, { navigate: pathname !== HOME_PATH });
   }
 
   return (
@@ -36,9 +33,7 @@ export function AppHeader() {
             value={month}
             onChange={(e) => onChangeMonth(e.target.value)}
             aria-label="対象月"
-            className={`tabular h-9 rounded-lg border border-[var(--color-line)] bg-[var(--color-bg)] px-2 text-sm outline-none ${
-              isPending ? "opacity-60" : ""
-            }`}
+            className="tabular h-9 rounded-lg border border-[var(--color-line)] bg-[var(--color-bg)] px-2 text-sm outline-none"
           />
           <form action={logout}>
             <button

@@ -42,6 +42,23 @@ export function aggregateMonthlyBars(
   return months.map((m) => map.get(m)!);
 }
 
+// 指定月リストそれぞれの月次サマリーを算出（範囲外の行は無視）。
+// カルーセルの先読み用：複数月をまとめてクライアントへ渡す。
+export function aggregateMonthlySummaries(
+  rows: DatedRow[],
+  months: string[]
+): Record<string, MonthlySummary> {
+  const buckets = new Map<string, AmountRow[]>();
+  for (const m of months) buckets.set(m, []);
+  for (const r of rows) {
+    const bucket = buckets.get(r.date.slice(0, 7));
+    if (bucket) bucket.push({ type: r.type, amount: r.amount });
+  }
+  const result: Record<string, MonthlySummary> = {};
+  for (const m of months) result[m] = summarize(buckets.get(m)!);
+  return result;
+}
+
 // カテゴリ別の集計入力
 export type CategoryRow = {
   amount: number;
