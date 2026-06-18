@@ -40,10 +40,10 @@ export function aggregateMonthlySummaries(
 // カテゴリ別の集計入力
 export type CategoryRow = {
   amount: number;
-  category: { id: string; name: string; icon: string | null } | null;
+  category: { id: string; name: string; icon: string | null; sort_order: number } | null;
 };
 
-// カテゴリ別合計を金額降順で返す
+// カテゴリ別合計を sort_order 順で返す
 export function aggregateCategoryBreakdown(
   rows: CategoryRow[]
 ): CategorySlice[] {
@@ -60,8 +60,9 @@ export function aggregateCategoryBreakdown(
         name: c?.name ?? "不明",
         icon: c?.icon ?? null,
         amount: r.amount,
+        sortOrder: c?.sort_order ?? 999,
       });
     }
   }
-  return [...map.values()].sort((a, b) => b.amount - a.amount);
+  return [...map.values()].sort((a, b) => a.sortOrder - b.sortOrder);
 }

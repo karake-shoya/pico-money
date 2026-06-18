@@ -72,21 +72,21 @@ describe("aggregateMonthlySummaries", () => {
 });
 
 describe("aggregateCategoryBreakdown", () => {
-  it("カテゴリ別に合算し金額降順で返す", () => {
+  it("カテゴリ別に合算し sort_order 順で返す", () => {
     const rows: CategoryRow[] = [
-      { amount: 300, category: { id: "a", name: "食費", icon: "🍜" } },
-      { amount: 700, category: { id: "b", name: "娯楽", icon: "🎮" } },
-      { amount: 200, category: { id: "a", name: "食費", icon: "🍜" } },
+      { amount: 300, category: { id: "a", name: "食費", icon: "🍜", sort_order: 1 } },
+      { amount: 700, category: { id: "b", name: "娯楽", icon: "🎮", sort_order: 5 } },
+      { amount: 200, category: { id: "a", name: "食費", icon: "🍜", sort_order: 1 } },
     ];
     expect(aggregateCategoryBreakdown(rows)).toEqual([
-      { categoryId: "b", name: "娯楽", icon: "🎮", amount: 700 },
-      { categoryId: "a", name: "食費", icon: "🍜", amount: 500 },
+      { categoryId: "a", name: "食費", icon: "🍜", amount: 500, sortOrder: 1 },
+      { categoryId: "b", name: "娯楽", icon: "🎮", amount: 700, sortOrder: 5 },
     ]);
   });
   it("category が null の行は不明としてまとめる", () => {
     const rows: CategoryRow[] = [{ amount: 100, category: null }];
     expect(aggregateCategoryBreakdown(rows)).toEqual([
-      { categoryId: "unknown", name: "不明", icon: null, amount: 100 },
+      { categoryId: "unknown", name: "不明", icon: null, amount: 100, sortOrder: 999 },
     ]);
   });
 });
