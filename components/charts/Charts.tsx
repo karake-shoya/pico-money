@@ -3,20 +3,30 @@
 import { useRef, useState } from "react";
 import Link from "next/link";
 import { Cell, Pie, PieChart, ResponsiveContainer } from "recharts";
+import { Wallet } from "lucide-react";
 import { useMonth } from "@/components/MonthProvider";
 import { useHorizontalSwipe } from "@/components/useHorizontalSwipe";
+import { BudgetSheet } from "@/components/budget/BudgetSheet";
 import { CategoryBadge, categoryColor } from "@/lib/category-icon";
 import { formatYen, shiftMonth } from "@/lib/format";
-import type { CategorySlice, TxType } from "@/lib/types";
+import type { Category, CategorySlice, TxType } from "@/lib/types";
 
 type Props = {
   expenseSlices: CategorySlice[];
   incomeSlices: CategorySlice[];
+  expenseCategories: Category[]; // 予算編集シート用（支出カテゴリ）
+  budgets: Record<string, number>; // categoryId -> 月予算
 };
 
-export function Charts({ expenseSlices, incomeSlices }: Props) {
+export function Charts({
+  expenseSlices,
+  incomeSlices,
+  expenseCategories,
+  budgets,
+}: Props) {
   const { month, setMonth } = useMonth();
   const [pieType, setPieType] = useState<TxType>("expense");
+  const [budgetOpen, setBudgetOpen] = useState(false);
   const swipeRef = useRef<HTMLDivElement>(null);
 
   // 横スワイプで月移動（サーバー再取得）。左=翌月 / 右=前月。
@@ -38,12 +48,76 @@ export function Charts({ expenseSlices, incomeSlices }: Props) {
     percent: total > 0 ? Math.round((c.amount / total) * 100) : 0,
   }));
 
+  // 予算は支出のみ対象。全体予算 = 各カテゴリ予算の合計。
+  const isExpense = pieType === "expense";
+  const totalBudget = Object.values(budgets).reduce((s, v) => s + v, 0);
+  const budgetRate =
+    totalBudget > 0 ? Math.round((total / totalBudget) * 100) : 0;
+  const budgetOver = total > totalBudget;
+
   return (
     <div
       ref={swipeRef}
       className="touch-pan-y"
       style={{ overscrollBehaviorX: "contain" }}
     >
+      {/* 月の予算（支出のみ）。全体予算 = 各カテゴリ予算の合計。 */}
+      {isExpense && (
+        <section className="mb-3 rounded-[var(--radius-card)] border border-[var(--color-line)] bg-[var(--color-surface)] p-4">
+          <div className="mb-2 flex items-center justify-between">
+            <h2 className="flex items-center gap-1.5 font-bold">
+              <Wallet className="h-4 w-4 text-[var(--color-muted)]" />
+              月の予算
+            </h2>
+            <button
+              type="button"
+              onClick={() => setBudgetOpen(true)}
+              className="h-7 rounded-md bg-[var(--color-bg)] px-3 text-xs font-medium text-[var(--color-brand)] active:opacity-70"
+            >
+              設定
+            </button>
+          </div>
+          {totalBudget > 0 ? (
+            <>
+              <div className="mb-1.5 flex items-baseline justify-between text-sm">
+                <span className="tabular font-semibold">
+                  {formatYen(total)}
+                  <span className="text-[var(--color-muted)]">
+                    {" "}
+                    / {formatYen(totalBudget)}
+                  </span>
+                </span>
+                <span
+                  className={`tabular text-xs font-semibold ${
+                    budgetOver
+                      ? "text-[var(--color-expense)]"
+                      : "text-[var(--color-muted)]"
+                  }`}
+                >
+                  {budgetOver
+                    ? `${formatYen(total - totalBudget)} 超過`
+                    : `残り ${formatYen(totalBudget - total)}`}
+                </span>
+              </div>
+              <div className="h-2.5 w-full overflow-hidden rounded-full bg-[var(--color-bg)]">
+                <div
+                  className={`h-full rounded-full transition-all ${
+                    budgetOver
+                      ? "bg-[var(--color-expense)]"
+                      : "bg-[var(--color-brand)]"
+                  }`}
+                  style={{ width: `${Math.min(budgetRate, 100)}%` }}
+                />
+              </div>
+            </>
+          ) : (
+            <p className="py-2 text-sm text-[var(--color-muted)]">
+              予算が未設定です。「設定」から登録できます。
+            </p>
+          )}
+        </section>
+      )}
+
       {/* カテゴリ別ドーナツ */}
       <section className="rounded-[var(--radius-card)] border border-[var(--color-line)] bg-[var(--color-surface)] p-4">
         <div className="mb-3 flex items-center justify-between">
@@ -101,28 +175,63 @@ export function Charts({ expenseSlices, incomeSlices }: Props) {
               </div>
             </div>
 
-            {/* カテゴリ別ランキング（金額と割合）。行タップで入出金へドリルダウン。 */}
+            {/* カテゴリ別ランキング（金額と割合）。行タップで入出金へドリルダウン。
+                支出で予算が設定されたカテゴリは消化率バーを表示。 */}
             <ul className="mt-3 space-y-1">
               {pieData.map((d) => {
+                const budget = isExpense ? budgets[d.categoryId] ?? 0 : 0;
+                const over = budget > 0 && d.value > budget;
                 return (
                   <li key={d.categoryId}>
                     <Link
                       href={`/transactions?month=${month}&cat=${d.categoryId}`}
-                      className="flex items-center gap-2.5 rounded-lg py-1.5 text-sm active:bg-[var(--color-bg)]"
+                      className="block rounded-lg px-1 py-1.5 text-sm active:bg-[var(--color-bg)]"
                     >
-                      <CategoryBadge
-                        name={d.name}
-                        className="h-7 w-7"
-                        iconClassName="h-4 w-4"
-                      />
-                      <span className="flex-1 truncate">{d.name}</span>
-                      <span className="tabular text-[var(--color-muted)]">
-                        {d.percent}%
-                      </span>
-                      <span className="tabular w-24 text-right font-medium">
-                        {formatYen(d.value)}
-                      </span>
-                      <span className="text-[var(--color-muted)]">›</span>
+                      <div className="flex items-center gap-2.5">
+                        <CategoryBadge
+                          name={d.name}
+                          className="h-7 w-7"
+                          iconClassName="h-4 w-4"
+                        />
+                        <span className="flex-1 truncate">{d.name}</span>
+                        <span className="tabular text-[var(--color-muted)]">
+                          {d.percent}%
+                        </span>
+                        <span className="tabular w-24 text-right font-medium">
+                          {formatYen(d.value)}
+                        </span>
+                        <span className="text-[var(--color-muted)]">›</span>
+                      </div>
+                      {budget > 0 && (
+                        <div className="mt-1 flex items-center gap-2 pl-[38px]">
+                          <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-[var(--color-bg)]">
+                            <div
+                              className={`h-full rounded-full ${
+                                over
+                                  ? "bg-[var(--color-expense)]"
+                                  : "bg-[var(--color-brand)]"
+                              }`}
+                              style={{
+                                width: `${Math.min(
+                                  Math.round((d.value / budget) * 100),
+                                  100
+                                )}%`,
+                              }}
+                            />
+                          </div>
+                          <span
+                            className={`tabular shrink-0 text-[11px] ${
+                              over
+                                ? "text-[var(--color-expense)]"
+                                : "text-[var(--color-muted)]"
+                            }`}
+                          >
+                            {over
+                              ? `${formatYen(d.value - budget)} 超過`
+                              : `予算 ${formatYen(budget)}`}
+                          </span>
+                        </div>
+                      )}
                     </Link>
                   </li>
                 );
@@ -131,6 +240,15 @@ export function Charts({ expenseSlices, incomeSlices }: Props) {
           </>
         )}
       </section>
+
+      {/* 予算編集シート */}
+      {budgetOpen && (
+        <BudgetSheet
+          categories={expenseCategories}
+          budgets={budgets}
+          onClose={() => setBudgetOpen(false)}
+        />
+      )}
     </div>
   );
 }

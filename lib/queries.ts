@@ -10,6 +10,7 @@ import {
   type CategoryRow,
 } from '@/lib/summary';
 import type {
+  Budget,
   Category,
   CategorySlice,
   MonthlySummary,
@@ -54,6 +55,14 @@ export async function getCategories(): Promise<Category[]> {
   return [...common, ...userCats].sort((a, b) =>
     a.type === b.type ? a.sort_order - b.sort_order : a.type < b.type ? -1 : 1
   );
+}
+
+// カテゴリ別の月予算（本人分）。毎月共通のためフィルタ不要。
+export async function getBudgets(): Promise<Budget[]> {
+  const supabase = await createClient();
+  const { data, error } = await supabase.from('budgets').select('*');
+  if (error) throw error;
+  return (data ?? []) as Budget[];
 }
 
 // 指定月の取引（日付降順）。カテゴリ情報を結合。
