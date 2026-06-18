@@ -1,7 +1,8 @@
 "use client";
 
+import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LogOut, Wallet } from "lucide-react";
+import { LogOut, Settings, Wallet } from "lucide-react";
 import { useMonth } from "@/components/MonthProvider";
 import { logout } from "@/lib/actions/auth";
 
@@ -35,6 +36,13 @@ export function AppHeader() {
             aria-label="対象月"
             className="tabular h-9 rounded-lg border border-[var(--color-line)] bg-[var(--color-bg)] px-2 text-sm outline-none"
           />
+          <Link
+            href="/settings"
+            className="flex h-9 w-9 items-center justify-center rounded-lg text-[var(--color-muted)] active:bg-[var(--color-bg)]"
+            aria-label="設定"
+          >
+            <Settings className="h-[18px] w-[18px]" strokeWidth={1.8} />
+          </Link>
           <form action={logout}>
             <button
               type="submit"
