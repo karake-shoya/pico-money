@@ -2,13 +2,14 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ArrowRightLeft, House, PieChart, type LucideIcon } from "lucide-react";
+import { ArrowRightLeft, House, PieChart, Repeat, type LucideIcon } from "lucide-react";
 import { useMonth } from "@/components/MonthProvider";
 
 const ITEMS: { href: string; label: string; icon: LucideIcon }[] = [
   { href: "/", label: "ホーム", icon: House },
   { href: "/transactions", label: "入出金", icon: ArrowRightLeft },
   { href: "/charts", label: "家計簿", icon: PieChart },
+  { href: "/recurring", label: "固定費", icon: Repeat },
 ];
 
 // 片手操作しやすい下部固定ナビ。選択中の月(?month)を保持して遷移する。
