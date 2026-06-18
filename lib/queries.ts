@@ -73,7 +73,7 @@ export async function getTransactionsForMonth(
   const { start, end } = monthRange(month);
   const { data, error } = await supabase
     .from('transactions')
-    .select('*, category:categories(id, name, icon, type)')
+    .select('*, category:categories(id, name, icon, type, sort_order)')
     .gte('date', start)
     .lt('date', end)
     .order('date', { ascending: false })
@@ -127,7 +127,7 @@ export async function getCategoryBreakdown(
   const { start, end } = monthRange(month);
   const { data, error } = await supabase
     .from('transactions')
-    .select('amount, category:categories(id, name, icon)')
+    .select('amount, category:categories(id, name, icon, sort_order)')
     .eq('type', type)
     .gte('date', start)
     .lt('date', end);

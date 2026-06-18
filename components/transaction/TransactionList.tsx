@@ -21,11 +21,11 @@ export function TransactionList({
     initialCategoryId ?? null
   );
 
-  // 出現するカテゴリを集計（件数・合計）。件数の多い順に並べる。
+  // 出現するカテゴリを集計（件数）。DB の sort_order 順に並べる。
   const categories = useMemo(() => {
     const map = new Map<
       string,
-      { id: string; name: string; icon: string | null; count: number }
+      { id: string; name: string; icon: string | null; count: number; sortOrder: number }
     >();
     for (const tx of transactions) {
       const id = tx.category?.id ?? "unknown";
@@ -38,10 +38,11 @@ export function TransactionList({
           name: tx.category?.name ?? "不明",
           icon: tx.category?.icon ?? null,
           count: 1,
+          sortOrder: tx.category?.sort_order ?? 999,
         });
       }
     }
-    return [...map.values()].sort((a, b) => b.count - a.count);
+    return [...map.values()].sort((a, b) => a.sortOrder - b.sortOrder);
   }, [transactions]);
 
   const filtered = useMemo(

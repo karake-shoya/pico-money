@@ -28,7 +28,7 @@ export type Transaction = {
 
 // 明細表示用: 取引にカテゴリ情報を結合したもの
 export type TransactionWithCategory = Transaction & {
-  category: Pick<Category, 'id' | 'name' | 'icon' | 'type'> | null;
+  category: Pick<Category, 'id' | 'name' | 'icon' | 'type' | 'sort_order'> | null;
 };
 
 // budgets テーブル（カテゴリ別の月予算・毎月共通）
@@ -55,4 +55,5 @@ export type CategorySlice = {
   name: string;
   icon: string | null;
   amount: number;
+  sortOrder: number;
 };
