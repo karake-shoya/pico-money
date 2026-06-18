@@ -31,6 +31,16 @@ export type TransactionWithCategory = Transaction & {
   category: Pick<Category, 'id' | 'name' | 'icon' | 'type'> | null;
 };
 
+// budgets テーブル（カテゴリ別の月予算・毎月共通）
+export type Budget = {
+  id: string;
+  user_id: string;
+  category_id: string;
+  amount: number; // 整数（円）
+  created_at: string;
+  updated_at: string;
+};
+
 // 月次サマリー
 export type MonthlySummary = {
   income: number;
