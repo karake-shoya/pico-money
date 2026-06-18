@@ -14,6 +14,7 @@ import type {
   Category,
   CategorySlice,
   MonthlySummary,
+  RecurringWithCategory,
   TransactionWithCategory,
   TxType,
 } from '@/lib/types';
@@ -116,6 +117,18 @@ export async function getMonthlySummaries(
   months: string[]
 ): Promise<Record<string, MonthlySummary>> {
   return aggregateMonthlySummaries(await fetchDatedRows(months), months);
+}
+
+// 固定費テンプレート一覧（カテゴリ結合）。日付順。
+export async function getRecurringTransactions(): Promise<RecurringWithCategory[]> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from('recurring_transactions')
+    .select('*, category:categories(id, name, icon, type, sort_order)')
+    .order('day', { ascending: true })
+    .order('created_at', { ascending: true });
+  if (error) throw error;
+  return (data ?? []) as unknown as RecurringWithCategory[];
 }
 
 // カテゴリ別内訳（円グラフ用）。選択月・指定 type の合計を金額降順で。

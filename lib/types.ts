@@ -23,7 +23,28 @@ export type Transaction = {
   category_id: string;
   amount: number; // 整数（円）
   memo: string | null;
+  recurring_id: string | null;
   created_at: string;
+};
+
+// recurring_transactions テーブル（固定費テンプレート）
+export type RecurringTransaction = {
+  id: string;
+  user_id: string;
+  type: TxType;
+  category_id: string;
+  amount: number;
+  memo: string | null;
+  day: number; // 1-31
+  enabled: boolean;
+  last_generated_month: string | null; // YYYY-MM
+  created_at: string;
+  updated_at: string;
+};
+
+// 固定費一覧表示用: テンプレートにカテゴリ情報を結合したもの
+export type RecurringWithCategory = RecurringTransaction & {
+  category: Pick<Category, 'id' | 'name' | 'icon' | 'type' | 'sort_order'> | null;
 };
 
 // 明細表示用: 取引にカテゴリ情報を結合したもの
