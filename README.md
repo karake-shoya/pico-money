@@ -12,6 +12,7 @@
 - グラフ：カテゴリ別ドーナツ（収入・支出切替 / 横スワイプで月移動）
 - カテゴリ別の月予算（毎月共通）と消化率バー・全体予算ゲージ
 - 固定費の自動登録（家賃・サブスク等のテンプレートを登録→毎月アプリ起動時に自動生成）
+- CSV入出力（Money Forward互換フォーマット）：月別エクスポート・一括インポート対応
 - カテゴリごとの固有色アイコン（明細・グラフ・登録フォームで一目で判別）
 - ダークテーマ（既定）
 - Supabase Auth によるメール＋パスワード認証、全データを RLS で保護
@@ -86,6 +87,7 @@ lib/
   supabase/          Supabase クライアント（client / server / セッション更新）
   actions/           Server Actions（認証 / 取引 CRUD）
   queries.ts         サーバー側データ取得・集計
+  csv.ts             CSV入出力（Money Forward互換）
   format.ts          表示・日付ユーティリティ
 proxy.ts             セッション更新と未ログイン時リダイレクト（Next.js 16 の middleware 後継）
 supabase/migrations/ DB スキーマ・RLS・seed（SQL）
@@ -103,5 +105,5 @@ scripts/gen-icons.mjs PWA アイコン生成（依存なし）
 
 ## MVP に含めないもの（将来対応）
 
-目標設定、銀行/カード連携、口座振替、CSV 入出力、OCR、カテゴリ編集 UI
+目標設定、銀行/カード連携、口座振替、OCR、カテゴリ編集 UI
 （カテゴリの DB 設計は拡張対応済み）。

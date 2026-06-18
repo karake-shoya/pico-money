@@ -1,5 +1,6 @@
+import { CsvButtons } from "@/components/transaction/CsvButtons";
 import { TransactionList } from "@/components/transaction/TransactionList";
-import { getTransactionsForMonth } from "@/lib/queries";
+import { getTransactionsForMonth, getCategories } from "@/lib/queries";
 import { monthLabel, normalizeMonth } from "@/lib/format";
 
 // 入出金（明細リスト）。選択中の月の取引を日付降順で表示。
@@ -11,7 +12,10 @@ export default async function TransactionsPage({
 }) {
   const { month: monthParam, cat } = await searchParams;
   const month = normalizeMonth(monthParam);
-  const transactions = await getTransactionsForMonth(month);
+  const [transactions, categories] = await Promise.all([
+    getTransactionsForMonth(month),
+    getCategories(),
+  ]);
 
   return (
     <div className="space-y-3">
@@ -19,9 +23,12 @@ export default async function TransactionsPage({
         <p className="text-sm text-[var(--color-muted)]">
           {monthLabel(month)}の入出金
         </p>
-        <p className="text-sm text-[var(--color-muted)]">
-          {transactions.length}件
-        </p>
+        <div className="flex items-center gap-2">
+          <CsvButtons transactions={transactions} month={month} categories={categories} />
+          <p className="text-sm text-[var(--color-muted)]">
+            {transactions.length}件
+          </p>
+        </div>
       </div>
 
       {transactions.length === 0 ? (
