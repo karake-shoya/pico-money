@@ -62,6 +62,17 @@ export function TransactionList({
     );
   }, [transactions]);
 
+  // 支出・収入で行を分けて表示するためにグループ分けする。
+  // type が不明なカテゴリ（旧データ等）は支出側にまとめる。
+  const expenseCategories = useMemo(
+    () => categories.filter((c) => c.type !== "income"),
+    [categories]
+  );
+  const incomeCategories = useMemo(
+    () => categories.filter((c) => c.type === "income"),
+    [categories]
+  );
+
   const filtered = useMemo(
     () =>
       selected === null
@@ -82,25 +93,44 @@ export function TransactionList({
 
   return (
     <div className="space-y-3">
-      {/* カテゴリフィルタ（横スクロール） */}
-      <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1">
-        <Chip
-          active={selected === null}
-          onClick={() => setSelected(null)}
-          icon={LayoutGrid}
-          label="すべて"
-          count={transactions.length}
-        />
-        {categories.map((c) => (
+      {/* カテゴリフィルタ。支出・収入で行を分けて横スクロール表示する。 */}
+      <div className="space-y-2">
+        {/* 支出の行（先頭に「すべて」チップを置く） */}
+        <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1">
           <Chip
-            key={c.id}
-            active={selected === c.id}
-            onClick={() => setSelected(c.id)}
-            icon={categoryIcon(c.name)}
-            label={c.name}
-            count={c.count}
+            active={selected === null}
+            onClick={() => setSelected(null)}
+            icon={LayoutGrid}
+            label="すべて"
+            count={transactions.length}
           />
-        ))}
+          {expenseCategories.map((c) => (
+            <Chip
+              key={c.id}
+              active={selected === c.id}
+              onClick={() => setSelected(c.id)}
+              icon={categoryIcon(c.name)}
+              label={c.name}
+              count={c.count}
+            />
+          ))}
+        </div>
+
+        {/* 収入の行（収入カテゴリが存在する場合のみ表示） */}
+        {incomeCategories.length > 0 && (
+          <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1">
+            {incomeCategories.map((c) => (
+              <Chip
+                key={c.id}
+                active={selected === c.id}
+                onClick={() => setSelected(c.id)}
+                icon={categoryIcon(c.name)}
+                label={c.name}
+                count={c.count}
+              />
+            ))}
+          </div>
+        )}
       </div>
 
       {/* 選択中の合計 */}
