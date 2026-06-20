@@ -20,9 +20,10 @@ export function useHorizontalSwipe(
   ref: RefObject<HTMLElement | null>,
   handlers: SwipeHandlers
 ) {
-  // 最新ハンドラを常に参照（依存配列を ref のみにして listener は1回だけ登録する）
   const handlersRef = useRef(handlers);
-  handlersRef.current = handlers;
+  useEffect(() => {
+    handlersRef.current = handlers;
+  });
 
   useEffect(() => {
     const el = ref.current;
@@ -92,7 +93,5 @@ export function useHorizontalSwipe(
       window.removeEventListener("mousemove", onMouseMove);
       window.removeEventListener("mouseup", end);
     };
-    // ref は安定。ハンドラは handlersRef 経由で最新を読むため依存に含めない。
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ref]);
 }

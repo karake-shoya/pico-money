@@ -1,44 +1,30 @@
 "use client";
 
 import { useActionState, useMemo, useState } from "react";
-import { useFormStatus } from "react-dom";
 import {
   createTransaction,
   updateTransaction,
   type TxFormState,
 } from "@/lib/actions/transactions";
 import { ChevronDown } from "lucide-react";
+import { SaveButton } from "@/components/SaveButton";
+import { TypeTabs } from "@/components/TypeTabs";
 import { CategoryBadge } from "@/lib/category-icon";
 import { todayDate } from "@/lib/format";
-import type { Category, TransactionWithCategory, TxType } from "@/lib/types";
+import {
+  defaultCategoryId,
+  type Category,
+  type TransactionWithCategory,
+  type TxType,
+} from "@/lib/types";
 import { Calculator } from "./Calculator";
 import { CategoryPicker } from "./CategoryPicker";
-
-// 新規登録時のデフォルトカテゴリ（支出・食費）。見つからなければ空。
-function defaultCategoryId(categories: Category[]): string {
-  return (
-    categories.find((c) => c.type === "expense" && c.name === "食費")?.id ?? ""
-  );
-}
 
 type Props = {
   categories: Category[];
   initial?: TransactionWithCategory | null;
   onDone: () => void;
 };
-
-function SaveButton() {
-  const { pending } = useFormStatus();
-  return (
-    <button
-      type="submit"
-      disabled={pending}
-      className="h-12 w-full rounded-xl bg-[var(--color-brand)] font-semibold text-white transition active:scale-[0.99] disabled:opacity-60"
-    >
-      {pending ? "保存中…" : "保存"}
-    </button>
-  );
-}
 
 export function TransactionForm({ categories, initial, onDone }: Props) {
   const isEdit = !!initial;
@@ -95,31 +81,7 @@ export function TransactionForm({ categories, initial, onDone }: Props) {
       >
       {/* 収入/支出タブ（タップで切替） */}
       <input type="hidden" name="type" value={type} />
-      <div className="-mx-5 -mt-1 grid grid-cols-2 border-b border-[var(--color-line)]">
-        {(["expense", "income"] as const).map((t) => {
-          const active = type === t;
-          const activeColor =
-            t === "expense" ? "var(--color-expense)" : "var(--color-income)";
-          return (
-            <button
-              key={t}
-              type="button"
-              onClick={() => changeType(t)}
-              className="relative h-12 text-sm font-semibold transition"
-              style={{
-                color: active ? activeColor : "var(--color-muted)",
-              }}
-            >
-              {t === "expense" ? "支出" : "収入"}
-              {/* アクティブ下線インジケータ */}
-              <span
-                className="absolute inset-x-0 -bottom-px h-0.5 rounded-full"
-                style={{ background: active ? activeColor : "transparent" }}
-              />
-            </button>
-          );
-        })}
-      </div>
+      <TypeTabs value={type} onChange={changeType} bordered />
 
       {/* 金額（タップで電卓を開閉。電卓の入力がここに即時反映される） */}
       <input type="hidden" name="amount" value={amount > 0 ? amount : ""} />

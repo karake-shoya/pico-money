@@ -4,8 +4,9 @@
 import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
 import { parseBudgetAmount } from '@/lib/budget-input';
+import type { ActionState } from '@/lib/types';
 
-export type BudgetFormState = { error: string } | { ok: true } | null;
+export type BudgetFormState = ActionState;
 
 // FormData の budget_<categoryId> 各値を検証し、正の値は upsert、0/空は delete する。
 // 予算編集シートから全カテゴリ分をまとめて保存する。

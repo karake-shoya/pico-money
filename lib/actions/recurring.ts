@@ -4,9 +4,10 @@ import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
 import { parseRecurringInput } from '@/lib/recurring-input';
 import { buildTransactions, type RecurringTemplate } from '@/lib/recurring-generate';
-import { currentMonth, monthRange } from '@/lib/format';
+import { currentMonth } from '@/lib/format';
+import type { ActionState } from '@/lib/types';
 
-export type RecurringFormState = { error: string } | { ok: true } | null;
+export type RecurringFormState = ActionState;
 
 function parse(formData: FormData) {
   return parseRecurringInput({

@@ -4,8 +4,9 @@
 import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
 import { parseTransactionInput } from '@/lib/transaction-input';
+import type { ActionState } from '@/lib/types';
 
-export type TxFormState = { error: string } | { ok: true } | null;
+export type TxFormState = ActionState;
 
 // FormData から生の文字列を取り出し、純粋関数で検証する。
 function parse(formData: FormData) {

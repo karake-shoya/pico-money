@@ -1,34 +1,20 @@
 "use client";
 
 import { useActionState } from "react";
-import { useFormStatus } from "react-dom";
 import { useRouter } from "next/navigation";
 import { saveBudgets, type BudgetFormState } from "@/lib/actions/budgets";
+import { BottomSheet } from "@/components/BottomSheet";
+import { SaveButton } from "@/components/SaveButton";
 import { CategoryBadge } from "@/lib/category-icon";
 import type { Category } from "@/lib/types";
 
-function SaveButton() {
-  const { pending } = useFormStatus();
-  return (
-    <button
-      type="submit"
-      disabled={pending}
-      className="h-12 w-full rounded-xl bg-[var(--color-brand)] font-semibold text-white transition active:scale-[0.99] disabled:opacity-60"
-    >
-      {pending ? "保存中…" : "保存"}
-    </button>
-  );
-}
-
-// カテゴリ別月予算の編集シート（ボトムシート）。
-// 支出カテゴリを一覧し、各行に金額を入力。0/空は予算なし。まとめて保存する。
 export function BudgetSheet({
   categories,
   budgets,
   onClose,
 }: {
-  categories: Category[]; // 支出カテゴリ
-  budgets: Record<string, number>; // categoryId -> 予算額
+  categories: Category[];
+  budgets: Record<string, number>;
   onClose: () => void;
 }) {
   const router = useRouter();
@@ -47,22 +33,11 @@ export function BudgetSheet({
   const errorMsg = state && "error" in state ? state.error : null;
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col justify-end">
-      <button
-        type="button"
-        aria-label="閉じる"
-        onClick={onClose}
-        className="absolute inset-0 bg-black/40"
-      />
+    <BottomSheet onClose={onClose} height="85dvh" title="月の予算（カテゴリ別）" zIndex={50}>
       <form
         action={formAction}
-        className="relative mx-auto flex max-h-[85dvh] w-full max-w-[480px] flex-col rounded-t-3xl bg-[var(--color-surface)] pb-[env(safe-area-inset-bottom)]"
+        className="flex min-h-0 flex-1 flex-col"
       >
-        <div className="shrink-0 px-5 pb-2 pt-3">
-          <div className="mx-auto mb-3 h-1.5 w-10 rounded-full bg-[var(--color-line)]" />
-          <h2 className="text-center text-base font-bold">月の予算（カテゴリ別）</h2>
-        </div>
-
         <ul className="min-h-0 flex-1 space-y-1 overflow-y-auto px-4 pb-3">
           {categories.map((c) => (
             <li key={c.id} className="flex items-center gap-3 py-1.5">
@@ -90,6 +65,6 @@ export function BudgetSheet({
           <SaveButton />
         </div>
       </form>
-    </div>
+    </BottomSheet>
   );
 }

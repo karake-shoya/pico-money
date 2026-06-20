@@ -1,11 +1,11 @@
 'use server';
 
-import { revalidatePath } from 'next/cache';
-import { revalidateTag } from 'next/cache';
+import { revalidatePath, revalidateTag } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
 import { parseCategoryInput } from '@/lib/category-input';
+import type { ActionState } from '@/lib/types';
 
-export type CategoryFormState = { error: string } | { ok: true } | null;
+export type CategoryFormState = ActionState;
 
 function parse(formData: FormData) {
   return parseCategoryInput({

@@ -1,12 +1,11 @@
 "use client";
 
-import { useRef, useState, useTransition } from "react";
+import { useTransition } from "react";
+import { useSwipeToReveal } from "@/components/useSwipeToReveal";
 import { deleteRecurring, toggleRecurring } from "@/lib/actions/recurring";
 import { CategoryBadge } from "@/lib/category-icon";
 import { formatYen } from "@/lib/format";
 import type { RecurringWithCategory } from "@/lib/types";
-
-const REVEAL = 88;
 
 export function RecurringItem({
   item,
@@ -15,28 +14,10 @@ export function RecurringItem({
   item: RecurringWithCategory;
   onEdit: (item: RecurringWithCategory) => void;
 }) {
-  const [offset, setOffset] = useState(0);
-  const [dragging, setDragging] = useState(false);
+  const { offset, dragging, revealed, handlers, reset } = useSwipeToReveal();
   const [isPending, startTransition] = useTransition();
-  const startX = useRef(0);
-  const curX = useRef(0);
 
   const isIncome = item.type === "income";
-
-  function onTouchStart(e: React.TouchEvent) {
-    startX.current = e.touches[0].clientX;
-    curX.current = offset;
-    setDragging(true);
-  }
-  function onTouchMove(e: React.TouchEvent) {
-    const dx = e.touches[0].clientX - startX.current;
-    const next = Math.max(-REVEAL, Math.min(0, curX.current + dx));
-    setOffset(next);
-  }
-  function onTouchEnd() {
-    setDragging(false);
-    setOffset(offset < -REVEAL / 2 ? -REVEAL : 0);
-  }
 
   function onDelete() {
     if (!confirm("この固定費を削除しますか？")) return;
@@ -53,8 +34,8 @@ export function RecurringItem({
   }
 
   function onRowClick() {
-    if (offset !== 0) {
-      setOffset(0);
+    if (revealed) {
+      reset();
       return;
     }
     onEdit(item);
@@ -74,9 +55,7 @@ export function RecurringItem({
 
       <div
         onClick={onRowClick}
-        onTouchStart={onTouchStart}
-        onTouchMove={onTouchMove}
-        onTouchEnd={onTouchEnd}
+        {...handlers}
         style={{
           transform: `translateX(${offset}px)`,
           transition: dragging ? "none" : "transform 0.2s ease",

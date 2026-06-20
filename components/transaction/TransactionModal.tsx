@@ -4,13 +4,13 @@ import {
   createContext,
   useCallback,
   useContext,
-  useEffect,
   useState,
   useTransition,
   type ReactNode,
 } from "react";
 import { useRouter } from "next/navigation";
-import { Plus, Trash2, X } from "lucide-react";
+import { Plus, Trash2 } from "lucide-react";
+import { BottomSheet } from "@/components/BottomSheet";
 import { TransactionForm } from "./TransactionForm";
 import { deleteTransaction } from "@/lib/actions/transactions";
 import type { Category, TransactionWithCategory } from "@/lib/types";
@@ -64,14 +64,6 @@ export function TransactionModalProvider({
     });
   }
 
-  // モーダル表示中は背面スクロールを止める
-  useEffect(() => {
-    document.body.style.overflow = open ? "hidden" : "";
-    return () => {
-      document.body.style.overflow = "";
-    };
-  }, [open]);
-
   function handleDone() {
     setOpen(false);
     router.refresh(); // サーバーデータを再取得
@@ -95,50 +87,32 @@ export function TransactionModalProvider({
 
       {/* ボトムシート モーダル */}
       {open && (
-        <div className="fixed inset-0 z-40 flex flex-col justify-end">
-          <button
-            type="button"
-            aria-label="閉じる"
-            onClick={close}
-            className="absolute inset-0 bg-black/40"
+        <BottomSheet
+          onClose={close}
+          height="94dvh"
+          fixedHeight
+          title={editing ? "編集" : "入力"}
+          headerLeft={
+            editing ? (
+              <button
+                type="button"
+                onClick={handleDelete}
+                disabled={isDeleting}
+                aria-label="この取引を削除"
+                className="flex h-8 w-8 items-center justify-center rounded-full text-[var(--color-expense)] transition active:bg-[var(--color-bg)] disabled:opacity-60"
+              >
+                <Trash2 className="h-5 w-5" />
+              </button>
+            ) : undefined
+          }
+        >
+          <TransactionForm
+            key={editing?.id ?? "new"}
+            categories={categories}
+            initial={editing}
+            onDone={handleDone}
           />
-          <div className="relative mx-auto flex h-[94dvh] max-h-[94dvh] w-full max-w-[480px] flex-col overflow-hidden rounded-t-3xl bg-[var(--color-surface)] pb-[env(safe-area-inset-bottom)]">
-            <div className="shrink-0 px-5 pb-2 pt-3">
-              <div className="mx-auto mb-3 h-1.5 w-10 rounded-full bg-[var(--color-line)]" />
-              {/* タイトルを中央に、削除（編集時）を左端・閉じるを右端に配置 */}
-              <div className="relative flex h-8 items-center justify-center">
-                {editing && (
-                  <button
-                    type="button"
-                    onClick={handleDelete}
-                    disabled={isDeleting}
-                    aria-label="この取引を削除"
-                    className="absolute left-0 flex h-8 w-8 items-center justify-center rounded-full text-[var(--color-expense)] transition active:bg-[var(--color-bg)] disabled:opacity-60"
-                  >
-                    <Trash2 className="h-5 w-5" />
-                  </button>
-                )}
-                <h2 className="text-base font-bold">
-                  {editing ? "編集" : "入力"}
-                </h2>
-                <button
-                  type="button"
-                  onClick={close}
-                  aria-label="閉じる"
-                  className="absolute right-0 flex h-8 w-8 items-center justify-center rounded-full text-[var(--color-muted)] active:bg-[var(--color-bg)]"
-                >
-                  <X className="h-5 w-5" />
-                </button>
-              </div>
-            </div>
-            <TransactionForm
-              key={editing?.id ?? "new"}
-              categories={categories}
-              initial={editing}
-              onDone={handleDone}
-            />
-          </div>
-        </div>
+        </BottomSheet>
       )}
     </ModalContext.Provider>
   );

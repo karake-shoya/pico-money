@@ -78,3 +78,13 @@ export type CategorySlice = {
   amount: number;
   sortOrder: number;
 };
+
+// Server Action の共通戻り値型
+export type ActionState = { error: string } | { ok: true } | null;
+
+// デフォルトカテゴリ（支出・食費）の ID を返す。見つからなければ空文字。
+export function defaultCategoryId(categories: Category[]): string {
+  return (
+    categories.find((c) => c.type === "expense" && c.name === "食費")?.id ?? ""
+  );
+}

@@ -1,39 +1,20 @@
 "use client";
 
-import { useRef, useState, useTransition } from "react";
+import { useTransition } from "react";
+import { useSwipeToReveal } from "@/components/useSwipeToReveal";
 import { useTransactionModal } from "./TransactionModal";
 import { deleteTransaction } from "@/lib/actions/transactions";
 import { CategoryBadge } from "@/lib/category-icon";
 import { dateLabel, formatSignedYen } from "@/lib/format";
 import type { TransactionWithCategory } from "@/lib/types";
 
-const REVEAL = 88; // 削除ボタン表示幅(px)
-
 export function TransactionItem({ tx }: { tx: TransactionWithCategory }) {
   const { openEdit } = useTransactionModal();
-  const [offset, setOffset] = useState(0); // 0 or -REVEAL
-  const [dragging, setDragging] = useState(false);
+  const { offset, dragging, revealed, handlers, reset } = useSwipeToReveal();
   const [isPending, startTransition] = useTransition();
-  const startX = useRef(0);
-  const curX = useRef(0);
 
   const isIncome = tx.type === "income";
   const signed = isIncome ? tx.amount : -tx.amount;
-
-  function onTouchStart(e: React.TouchEvent) {
-    startX.current = e.touches[0].clientX;
-    curX.current = offset;
-    setDragging(true);
-  }
-  function onTouchMove(e: React.TouchEvent) {
-    const dx = e.touches[0].clientX - startX.current;
-    const next = Math.max(-REVEAL, Math.min(0, curX.current + dx));
-    setOffset(next);
-  }
-  function onTouchEnd() {
-    setDragging(false);
-    setOffset(offset < -REVEAL / 2 ? -REVEAL : 0);
-  }
 
   function onDelete() {
     if (!confirm("この取引を削除しますか？")) return;
@@ -43,9 +24,8 @@ export function TransactionItem({ tx }: { tx: TransactionWithCategory }) {
   }
 
   function onRowClick() {
-    // スワイプ表示中はタップで閉じるだけ。通常時は編集を開く。
-    if (offset !== 0) {
-      setOffset(0);
+    if (revealed) {
+      reset();
       return;
     }
     openEdit(tx);
@@ -67,9 +47,7 @@ export function TransactionItem({ tx }: { tx: TransactionWithCategory }) {
       {/* 行本体 */}
       <div
         onClick={onRowClick}
-        onTouchStart={onTouchStart}
-        onTouchMove={onTouchMove}
-        onTouchEnd={onTouchEnd}
+        {...handlers}
         style={{
           transform: `translateX(${offset}px)`,
           transition: dragging ? "none" : "transform 0.2s ease",

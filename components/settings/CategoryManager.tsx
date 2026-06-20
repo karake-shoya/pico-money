@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { ChevronRight, Plus } from "lucide-react";
+import { TypeTabs } from "@/components/TypeTabs";
 import { CategoryBadge } from "@/lib/category-icon";
 import { CategorySheet } from "./CategorySheet";
 import type { Category, TxType } from "@/lib/types";
@@ -47,30 +48,7 @@ export function CategoryManager({
       </div>
 
       {/* 支出/収入タブ */}
-      <div className="grid grid-cols-2 border-b border-[var(--color-line)]">
-        {(["expense", "income"] as const).map((t) => {
-          const active = type === t;
-          const activeColor =
-            t === "expense" ? "var(--color-expense)" : "var(--color-income)";
-          return (
-            <button
-              key={t}
-              type="button"
-              onClick={() => setType(t)}
-              className="relative h-12 text-sm font-semibold transition"
-              style={{
-                color: active ? activeColor : "var(--color-muted)",
-              }}
-            >
-              {t === "expense" ? "支出" : "収入"}
-              <span
-                className="absolute inset-x-0 -bottom-px h-0.5 rounded-full"
-                style={{ background: active ? activeColor : "transparent" }}
-              />
-            </button>
-          );
-        })}
-      </div>
+      <TypeTabs value={type} onChange={setType} />
 
       {/* カテゴリ一覧 */}
       {visible.length === 0 ? (

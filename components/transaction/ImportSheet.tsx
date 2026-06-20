@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useEffect, useMemo, useState } from "react";
+import { useActionState, useMemo, useState } from "react";
 import { useFormStatus } from "react-dom";
 import { useRouter } from "next/navigation";
 import { AlertTriangle, CheckCircle } from "lucide-react";
@@ -12,6 +12,7 @@ import {
   type ImportTxInput,
 } from "@/lib/csv";
 import { importTransactions, type ImportFormState } from "@/lib/actions/csv";
+import { BottomSheet } from "@/components/BottomSheet";
 import { CategoryBadge } from "@/lib/category-icon";
 import { formatYen, dateLabel } from "@/lib/format";
 import type { Category } from "@/lib/types";
@@ -39,13 +40,6 @@ export function ImportSheet({
   onClose: () => void;
 }) {
   const router = useRouter();
-
-  useEffect(() => {
-    document.body.style.overflow = "hidden";
-    return () => {
-      document.body.style.overflow = "";
-    };
-  }, []);
 
   const { parseResult, skippedTransfers } = useMemo(() => {
     const rows = parseCsvRows(csvText);
@@ -108,58 +102,36 @@ export function ImportSheet({
 
   if (!parseResult.ok) {
     return (
-      <div className="fixed inset-0 z-50 flex flex-col justify-end">
-        <button
-          type="button"
-          aria-label="閉じる"
-          onClick={onClose}
-          className="absolute inset-0 bg-black/40"
-        />
-        <div className="relative mx-auto flex max-h-[85dvh] w-full max-w-[480px] flex-col rounded-t-3xl bg-[var(--color-surface)] pb-[env(safe-area-inset-bottom)]">
-          <div className="shrink-0 px-5 pb-2 pt-3">
-            <div className="mx-auto mb-3 h-1.5 w-10 rounded-full bg-[var(--color-line)]" />
-            <h2 className="text-center text-base font-bold">CSVインポート</h2>
-          </div>
-          <div className="px-5 py-8 text-center">
-            <AlertTriangle className="mx-auto mb-3 h-10 w-10 text-[var(--color-expense)]" />
-            <p className="text-sm text-[var(--color-expense)]">{parseResult.error}</p>
-          </div>
-          <div className="shrink-0 border-t border-[var(--color-line)] px-5 py-3">
-            <button
-              type="button"
-              onClick={onClose}
-              className="h-12 w-full rounded-xl border border-[var(--color-line)] font-semibold transition active:scale-[0.99]"
-            >
-              閉じる
-            </button>
-          </div>
+      <BottomSheet onClose={onClose} height="85dvh" title="CSVインポート" zIndex={50}>
+        <div className="px-5 py-8 text-center">
+          <AlertTriangle className="mx-auto mb-3 h-10 w-10 text-[var(--color-expense)]" />
+          <p className="text-sm text-[var(--color-expense)]">{parseResult.error}</p>
         </div>
-      </div>
+        <div className="shrink-0 border-t border-[var(--color-line)] px-5 py-3">
+          <button
+            type="button"
+            onClick={onClose}
+            className="h-12 w-full rounded-xl border border-[var(--color-line)] font-semibold transition active:scale-[0.99]"
+          >
+            閉じる
+          </button>
+        </div>
+      </BottomSheet>
     );
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col justify-end">
-      <button
-        type="button"
-        aria-label="閉じる"
-        onClick={onClose}
-        className="absolute inset-0 bg-black/40"
-      />
+    <BottomSheet onClose={onClose} height="85dvh" title="CSVインポート" zIndex={50}>
       <form
         action={formAction}
-        className="relative mx-auto flex max-h-[85dvh] w-full max-w-[480px] flex-col rounded-t-3xl bg-[var(--color-surface)] pb-[env(safe-area-inset-bottom)]"
+        className="flex min-h-0 flex-1 flex-col"
       >
         <input type="hidden" name="csv_data" value={importDataJson} />
 
-        <div className="shrink-0 px-5 pb-2 pt-3">
-          <div className="mx-auto mb-3 h-1.5 w-10 rounded-full bg-[var(--color-line)]" />
-          <h2 className="text-center text-base font-bold">CSVインポート</h2>
-          <p className="mt-1 text-center text-xs text-[var(--color-muted)]">
-            {resolvedRows.length}件をインポート
-            {skippedTransfers > 0 && `（振替${skippedTransfers}件はスキップ）`}
-          </p>
-        </div>
+        <p className="-mt-1 mb-2 text-center text-xs text-[var(--color-muted)]">
+          {resolvedRows.length}件をインポート
+          {skippedTransfers > 0 && `（振替${skippedTransfers}件はスキップ）`}
+        </p>
 
         <ul className="min-h-0 flex-1 space-y-1 overflow-y-auto px-4 pb-3">
           {resolvedRows.map((row) => {
@@ -249,6 +221,6 @@ export function ImportSheet({
           <ImportButton disabled={!allResolved} />
         </div>
       </form>
-    </div>
+    </BottomSheet>
   );
 }
