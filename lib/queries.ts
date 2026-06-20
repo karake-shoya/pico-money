@@ -14,6 +14,7 @@ import type {
   Category,
   CategorySlice,
   MonthlySummary,
+  PushSubscriptionRow,
   RecurringWithCategory,
   TransactionWithCategory,
   TxType,
@@ -129,6 +130,21 @@ export async function getRecurringTransactions(): Promise<RecurringWithCategory[
     .order('created_at', { ascending: true });
   if (error) throw error;
   return (data ?? []) as unknown as RecurringWithCategory[];
+}
+
+// 本人の Web Push 購読（最新1件）。リマインダー設定 UI の初期表示用。
+// 端末ごとに endpoint が異なるため厳密には端末別だが、設定画面では
+// 「直近に登録した購読」を代表として時刻・有効状態を表示する。
+export async function getMyPushSubscription(): Promise<PushSubscriptionRow | null> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from('push_subscriptions')
+    .select('*')
+    .order('updated_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (error) throw error;
+  return (data ?? null) as PushSubscriptionRow | null;
 }
 
 // カテゴリ別内訳（円グラフ用）。選択月・指定 type の合計を金額降順で。

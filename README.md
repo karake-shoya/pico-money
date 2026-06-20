@@ -15,6 +15,7 @@
 - 月次推移グラフ（直近6ヶ月の収入・支出を棒、収支を折れ線で表示 / 棒タップでその月へ移動）
 - カテゴリ別の月予算（毎月共通）と消化率バー・全体予算ゲージ
 - 固定費の自動登録（家賃・サブスク等のテンプレートを登録→毎月アプリ起動時に自動生成）
+- 記録忘れリマインダー（Web Push）：毎日指定時刻に、その日まだ記録が無ければ通知。Service Worker＋Supabase Edge Function（`send-reminders`）＋pg_cron で配信（設定→「記録忘れリマインダー」で時刻設定・ON/OFF）
 - CSV入出力（Money Forward互換フォーマット）：月別エクスポート・一括インポート対応
 - カテゴリごとの固有色アイコン（明細・グラフ・登録フォームで一目で判別）
 - ダークテーマ（既定）
@@ -61,6 +62,9 @@ NEXT_PUBLIC_SUPABASE_URL=https://xxxx.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-public-key
 # レシート読み取りに使用（サーバー専用・クライアントには露出しない）。未設定でも他機能は動作します。
 ANTHROPIC_API_KEY=sk-ant-xxxx
+# 記録忘れリマインダー（Web Push）の購読に使用する VAPID 公開鍵。
+# `npx web-push generate-vapid-keys` で生成。未設定なら通知トグルは無効表示になります。
+NEXT_PUBLIC_VAPID_PUBLIC_KEY=BB...（公開鍵）
 ```
 
 ### 4. 開発サーバー
@@ -77,6 +81,41 @@ http://localhost:3000 を開きます。未ログインの場合は `/login` に
 2. 環境変数 `NEXT_PUBLIC_SUPABASE_URL` / `NEXT_PUBLIC_SUPABASE_ANON_KEY` を設定。
 3. デプロイ後、Supabase の Authentication → URL Configuration に本番 URL を登録。
 
+## 記録忘れリマインダー（Web Push）のセットアップ
+
+通知はバックグラウンドのプッシュで届くため、クライアント・サーバー双方の設定が必要です。
+
+1. **VAPID 鍵を生成**：`npx web-push generate-vapid-keys`（公開鍵・秘密鍵のペア）。
+2. **Next（Vercel）側**：`NEXT_PUBLIC_VAPID_PUBLIC_KEY` に公開鍵を設定。
+3. **Supabase Edge Function をデプロイ**：`supabase functions deploy send-reminders`。
+   secrets を設定：
+   - `VAPID_PUBLIC_KEY` / `VAPID_PRIVATE_KEY`（生成した鍵）
+   - `VAPID_SUBJECT`（例 `mailto:you@example.com`）
+   - `REMINDER_FUNCTION_SECRET`（任意のランダム文字列。cron からの呼び出し検証用）
+4. **migration を適用**：`supabase/migrations/0007_push_subscriptions.sql`
+   （`push_subscriptions` テーブル＋`pg_cron`/`pg_net` 拡張を作成）。
+5. **pg_cron を登録**：30分毎に Edge Function を叩く。URL とシークレットは Vault に保存して参照する。
+   ```sql
+   -- Vault に保存（一度だけ）
+   select vault.create_secret('https://<project-ref>.supabase.co/functions/v1/send-reminders', 'reminder_function_url');
+   select vault.create_secret('<REMINDER_FUNCTION_SECRET と同じ値>', 'reminder_function_secret');
+
+   -- 30分毎に未記録ユーザーへ通知
+   select cron.schedule('send-reminders', '*/30 * * * *', $$
+     select net.http_post(
+       url     := (select decrypted_secret from vault.decrypted_secrets where name = 'reminder_function_url'),
+       headers := jsonb_build_object(
+         'content-type', 'application/json',
+         'x-reminder-secret', (select decrypted_secret from vault.decrypted_secrets where name = 'reminder_function_secret')
+       ),
+       body    := '{}'::jsonb
+     );
+   $$);
+   ```
+
+> iOS / iPadOS は 16.4 以上かつ「ホーム画面に追加」した PWA でのみ Web Push が動作します。
+> 配信タイミングはプッシュサービスの都合で前後することがあります（OS のアラームほど厳密ではありません）。
+
 ## ディレクトリ構成
 
 ```
@@ -86,6 +125,7 @@ app/
     transactions/    明細リスト
     charts/          グラフ
     recurring/       固定費管理
+    settings/        カテゴリ管理・記録忘れリマインダー設定
   login/             認証画面
   manifest.ts        PWA マニフェスト
 components/          UI コンポーネント
@@ -97,6 +137,8 @@ lib/
   format.ts          表示・日付ユーティリティ
 proxy.ts             セッション更新と未ログイン時リダイレクト（Next.js 16 の middleware 後継）
 supabase/migrations/ DB スキーマ・RLS・seed（SQL）
+supabase/functions/  Edge Function（send-reminders：Web Push 送信）
+public/sw.js         Service Worker（Web Push 受信・通知表示）
 scripts/gen-icons.mjs PWA アイコン生成（依存なし）
 ```
 

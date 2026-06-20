@@ -52,6 +52,20 @@ export type TransactionWithCategory = Transaction & {
   category: Pick<Category, 'id' | 'name' | 'icon' | 'type' | 'sort_order'> | null;
 };
 
+// push_subscriptions テーブル（Web Push の購読・記録忘れリマインダー用）
+export type PushSubscriptionRow = {
+  id: string;
+  user_id: string;
+  endpoint: string;
+  p256dh: string;
+  auth: string;
+  reminder_time: string; // 'HH:MM:SS'（JST 解釈）
+  enabled: boolean;
+  last_notified_date: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
 // budgets テーブル（カテゴリ別の月予算・毎月共通）
 export type Budget = {
   id: string;

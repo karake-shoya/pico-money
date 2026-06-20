@@ -1,6 +1,7 @@
 import { AppHeader } from "@/components/AppHeader";
 import { BottomNav } from "@/components/BottomNav";
 import { MonthProvider } from "@/components/MonthProvider";
+import { ServiceWorkerRegister } from "@/components/ServiceWorkerRegister";
 import { TransactionModalProvider } from "@/components/transaction/TransactionModal";
 import { getCategories } from "@/lib/queries";
 import { generateRecurringForCurrentMonth } from "@/lib/actions/recurring";
@@ -20,6 +21,7 @@ export default async function MainLayout({
   return (
     <MonthProvider>
       <TransactionModalProvider categories={categories}>
+        <ServiceWorkerRegister />
         <AppHeader />
         <main className="mx-auto w-full max-w-[480px] px-4 pb-[calc(150px+env(safe-area-inset-bottom))] pt-4">
           {children}
