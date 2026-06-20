@@ -2,10 +2,11 @@
 import { unstable_cache } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
 import { createAnonClient } from '@/lib/supabase/anon';
-import { monthRange } from '@/lib/format';
+import { monthRange, shiftMonth, shiftWeek, weekRange } from '@/lib/format';
 import {
   aggregateCategoryBreakdown,
   aggregateMonthlySummaries,
+  buildMonthlyReport,
   summarize,
   type CategoryRow,
 } from '@/lib/summary';
@@ -13,6 +14,7 @@ import type {
   Budget,
   Category,
   CategorySlice,
+  MonthlyReport,
   MonthlySummary,
   PushSubscriptionRow,
   RecurringWithCategory,
@@ -84,12 +86,12 @@ export async function getTransactionsForMonth(
   return (data ?? []) as unknown as TransactionWithCategory[];
 }
 
-// 月次サマリー（収入 / 支出 / 収支 / 貯蓄率）
-export async function getMonthlySummary(
-  month: string
+// 任意期間 [start, end) の収支サマリー（収入 / 支出 / 収支 / 貯蓄率）。
+async function summaryForRange(
+  start: string,
+  end: string
 ): Promise<MonthlySummary> {
   const supabase = await createClient();
-  const { start, end } = monthRange(month);
   const { data, error } = await supabase
     .from('transactions')
     .select('type, amount')
@@ -97,6 +99,14 @@ export async function getMonthlySummary(
     .lt('date', end);
   if (error) throw error;
   return summarize(data ?? []);
+}
+
+// 月次サマリー（収入 / 支出 / 収支 / 貯蓄率）
+export async function getMonthlySummary(
+  month: string
+): Promise<MonthlySummary> {
+  const { start, end } = monthRange(month);
+  return summaryForRange(start, end);
 }
 
 // 指定月リストを覆う期間の取引（date, type, amount）を1クエリで取得する共通処理。
@@ -147,13 +157,13 @@ export async function getMyPushSubscription(): Promise<PushSubscriptionRow | nul
   return (data ?? null) as PushSubscriptionRow | null;
 }
 
-// カテゴリ別内訳（円グラフ用）。選択月・指定 type の合計を金額降順で。
-export async function getCategoryBreakdown(
-  month: string,
+// 任意期間 [start, end) のカテゴリ別内訳（指定 type）。
+async function categoryBreakdownForRange(
+  start: string,
+  end: string,
   type: TxType
 ): Promise<CategorySlice[]> {
   const supabase = await createClient();
-  const { start, end } = monthRange(month);
   const { data, error } = await supabase
     .from('transactions')
     .select('amount, category:categories(id, name, icon, sort_order)')
@@ -163,4 +173,44 @@ export async function getCategoryBreakdown(
   if (error) throw error;
 
   return aggregateCategoryBreakdown((data ?? []) as unknown as CategoryRow[]);
+}
+
+// カテゴリ別内訳（円グラフ用）。選択月・指定 type の合計を金額降順で。
+export async function getCategoryBreakdown(
+  month: string,
+  type: TxType
+): Promise<CategorySlice[]> {
+  const { start, end } = monthRange(month);
+  return categoryBreakdownForRange(start, end, type);
+}
+
+// 月次振り返りレポート（指定月の実績まとめ・前月比・支出上位・予算超過）。
+// 当月/前月のサマリー、当月の支出内訳、カテゴリ別予算をまとめて取得し集計する。
+export async function getMonthlyReport(month: string): Promise<MonthlyReport> {
+  const prev = shiftMonth(month, -1);
+  const [current, previous, expenseByCategory, budgets] = await Promise.all([
+    getMonthlySummary(month),
+    getMonthlySummary(prev),
+    getCategoryBreakdown(month, 'expense'),
+    getBudgets(),
+  ]);
+  // categoryId → 予算額のマップ。
+  const budgetByCategory: Record<string, number> = {};
+  for (const b of budgets) budgetByCategory[b.category_id] = b.amount;
+
+  return buildMonthlyReport(current, previous, expenseByCategory, budgetByCategory);
+}
+
+// 週次振り返りレポート（週は月曜始まり・weekStart は 'YYYY-MM-DD'）。
+// 予算は月次のため週次では扱わない（buildMonthlyReport に空の予算を渡し overBudget は空になる）。
+export async function getWeeklyReport(weekStart: string): Promise<MonthlyReport> {
+  const cur = weekRange(weekStart);
+  const prevWeek = weekRange(shiftWeek(weekStart, -1));
+  const [current, previous, expenseByCategory] = await Promise.all([
+    summaryForRange(cur.start, cur.end),
+    summaryForRange(prevWeek.start, prevWeek.end),
+    categoryBreakdownForRange(cur.start, cur.end, 'expense'),
+  ]);
+
+  return buildMonthlyReport(current, previous, expenseByCategory, {});
 }

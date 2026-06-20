@@ -196,10 +196,11 @@ export function HomeCarousel({
         </button>
       </div>
 
-      {/* ビューポート（横はみ出しをクリップ）。-mx-4 px は各カード側で付与。 */}
+      {/* ビューポート（横はみ出しをクリップ）。-mx-4 px は各カード側で付与。
+          高さはカード内容に追従させる（min-h で画面を埋めると下に置く要素との間に余白ができるため）。 */}
       <div
         ref={areaRef}
-        className="-mx-4 min-h-[70dvh] touch-pan-y overflow-hidden"
+        className="-mx-4 touch-pan-y overflow-hidden"
         style={{ overscrollBehaviorX: "contain" }}
       >
         {/* 3枚（前/現/次）を横並びにし translateX でスライド。

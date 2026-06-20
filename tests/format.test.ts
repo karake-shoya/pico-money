@@ -9,6 +9,10 @@ import {
   monthRange,
   normalizeMonth,
   shiftMonth,
+  shiftWeek,
+  startOfWeek,
+  weekLabel,
+  weekRange,
 } from "@/lib/format";
 
 describe("formatYen", () => {
@@ -123,5 +127,33 @@ describe("ラベル整形", () => {
   it("dateLabel は 月/日(曜日)", () => {
     // 2026-06-17 は水曜日
     expect(dateLabel("2026-06-17")).toBe("6/17(水)");
+  });
+});
+
+describe("週ヘルパー（月曜始まり）", () => {
+  // 2026-06-15 は月曜、6-17 は水曜、6-21 は日曜
+  it("startOfWeek は週内の任意日からその週の月曜を返す", () => {
+    expect(startOfWeek("2026-06-15")).toBe("2026-06-15"); // 月曜自身
+    expect(startOfWeek("2026-06-17")).toBe("2026-06-15"); // 水曜
+    expect(startOfWeek("2026-06-21")).toBe("2026-06-15"); // 日曜
+  });
+  it("月をまたぐ週も正しく月曜へ戻す", () => {
+    // 2026-07-01 は水曜 → その週の月曜は 2026-06-29
+    expect(startOfWeek("2026-07-01")).toBe("2026-06-29");
+  });
+  it("shiftWeek は7日単位で前後へ動かす", () => {
+    expect(shiftWeek("2026-06-15", 1)).toBe("2026-06-22");
+    expect(shiftWeek("2026-06-15", -1)).toBe("2026-06-08");
+    expect(shiftWeek("2026-06-29", 1)).toBe("2026-07-06"); // 月またぎ
+  });
+  it("weekRange は [月曜, 翌週月曜) を返す", () => {
+    expect(weekRange("2026-06-15")).toEqual({
+      start: "2026-06-15",
+      end: "2026-06-22",
+    });
+  });
+  it("weekLabel は 開始/日〜終了/日（日曜）", () => {
+    expect(weekLabel("2026-06-15")).toBe("6/15〜6/21");
+    expect(weekLabel("2026-06-29")).toBe("6/29〜7/5"); // 月またぎ
   });
 });

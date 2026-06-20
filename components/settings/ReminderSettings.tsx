@@ -5,6 +5,7 @@ import { Bell } from "lucide-react";
 import {
   savePushSubscription,
   updateReminderTime,
+  updateMonthlyReportEnabled,
   deletePushSubscription,
 } from "@/lib/actions/notifications";
 import type { PushSubscriptionRow } from "@/lib/types";
@@ -38,6 +39,9 @@ export function ReminderSettings({
   initial: PushSubscriptionRow | null;
 }) {
   const [enabled, setEnabled] = useState(initial?.enabled ?? false);
+  const [monthlyEnabled, setMonthlyEnabled] = useState(
+    initial?.monthly_report_enabled ?? true
+  );
   // DB の 'HH:MM:SS' → input[type=time] 用 'HH:MM'
   const [time, setTime] = useState(
     initial?.reminder_time?.slice(0, 5) ?? "21:00"
@@ -123,6 +127,20 @@ export function ReminderSettings({
     });
   }
 
+  // 月次レポート通知の ON/OFF（購読がある＝リマインダー有効時のみ操作可）
+  function toggleMonthly() {
+    if (isPending || !enabled) return;
+    const next = !monthlyEnabled;
+    setMonthlyEnabled(next);
+    startTransition(async () => {
+      const res = await updateMonthlyReportEnabled(next);
+      if (res && "error" in res) {
+        setMonthlyEnabled(!next); // 失敗時はロールバック
+        setMessage(res.error);
+      }
+    });
+  }
+
   return (
     <section className="space-y-3 rounded-[var(--radius-card)] border border-[var(--color-line)] bg-[var(--color-surface)] p-4">
       <div className="flex items-center justify-between">
@@ -164,6 +182,35 @@ export function ReminderSettings({
           disabled={isPending}
           className="rounded-lg border border-[var(--color-line)] bg-[var(--color-bg)] px-3 py-1.5 text-sm text-[var(--color-ink)] outline-none focus:border-[var(--color-brand)] disabled:opacity-50"
         />
+      </div>
+
+      {/* 月次振り返りレポート（リマインダー有効時のみ操作可） */}
+      <div className="flex items-center justify-between border-t border-[var(--color-line)] pt-3">
+        <div className="pr-3">
+          <span className="text-sm font-medium">月次レポートを通知</span>
+          <p className="text-xs text-[var(--color-muted)]">
+            毎月初めに先月の振り返り（収支・前月比・予算超過）をお届けします。
+          </p>
+        </div>
+        <button
+          type="button"
+          role="switch"
+          aria-checked={monthlyEnabled && enabled}
+          aria-label="月次レポート通知の有効/無効"
+          onClick={toggleMonthly}
+          disabled={isPending || !enabled}
+          className={`relative h-7 w-12 shrink-0 rounded-full transition disabled:opacity-40 ${
+            monthlyEnabled && enabled
+              ? "bg-[var(--color-brand)]"
+              : "bg-[var(--color-line)]"
+          }`}
+        >
+          <span
+            className={`absolute left-0.5 top-0.5 h-6 w-6 rounded-full bg-white transition-transform ${
+              monthlyEnabled && enabled ? "translate-x-5" : "translate-x-0"
+            }`}
+          />
+        </button>
       </div>
 
       {message && (

@@ -17,7 +17,8 @@ self.addEventListener("push", (event) => {
     icon: "/icon-192.png",
     badge: "/icon-192.png",
     data: { url: payload.url || "/" },
-    tag: "pico-money-reminder", // 同種通知をまとめて積み上げない
+    // 通知種別ごとに tag を分け、リマインダーと月次レポートが互いを上書きしないようにする。
+    tag: payload.tag || "pico-money-reminder",
   };
 
   event.waitUntil(self.registration.showNotification(title, options));

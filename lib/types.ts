@@ -62,6 +62,8 @@ export type PushSubscriptionRow = {
   reminder_time: string; // 'HH:MM:SS'（JST 解釈）
   enabled: boolean;
   last_notified_date: string | null;
+  monthly_report_enabled: boolean; // 月次振り返りレポートを通知するか
+  last_report_month: string | null; // 最後に月次レポートを送った対象月 'YYYY-MM'
   created_at: string;
   updated_at: string;
 };
@@ -91,6 +93,31 @@ export type CategorySlice = {
   icon: string | null;
   amount: number;
   sortOrder: number;
+};
+
+// 月次振り返りレポートの予算超過カテゴリ
+export type ReportOverBudget = {
+  categoryId: string;
+  name: string;
+  icon: string | null;
+  spent: number; // 当月の支出実績
+  budget: number; // 設定予算
+  over: number; // 超過額（spent - budget）
+};
+
+// 月次振り返りレポート（先月の実績まとめ）
+export type MonthlyReport = {
+  current: MonthlySummary;
+  previous: MonthlySummary;
+  // 前月比の増減（当月 - 前月）。各項目の符号がそのまま増減を表す。
+  deltas: {
+    income: number;
+    expense: number;
+    balance: number;
+    savingsRate: number;
+  };
+  topExpenses: CategorySlice[]; // 支出の多いカテゴリ上位（金額降順）
+  overBudget: ReportOverBudget[]; // 予算超過カテゴリ（超過額の降順）
 };
 
 // Server Action の共通戻り値型

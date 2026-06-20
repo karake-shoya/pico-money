@@ -81,6 +81,31 @@ export async function updateReminderTime(
   return { ok: true };
 }
 
+// 月次振り返りレポート通知の ON/OFF を更新（本人の全購読に適用）。
+// リマインダー本体（enabled）とは独立したトグル。
+export async function updateMonthlyReportEnabled(
+  enabled: boolean
+): Promise<ActionState> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: 'ログインが必要です。' };
+
+  // RLS により本人の行のみ更新される
+  const { error } = await supabase
+    .from('push_subscriptions')
+    .update({
+      monthly_report_enabled: enabled,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('user_id', user.id);
+  if (error) return { error: '月次レポート設定の更新に失敗しました。' };
+
+  revalidatePath('/settings');
+  return { ok: true };
+}
+
 // 指定 endpoint の購読を削除（リマインダー無効化）。
 export async function deletePushSubscription(
   endpoint: string

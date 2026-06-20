@@ -15,6 +15,8 @@
 - 月次推移グラフ（直近6ヶ月の収入・支出を棒、収支を折れ線で表示 / 棒タップでその月へ移動）
 - カテゴリ別の月予算（毎月共通）と消化率バー・全体予算ゲージ。当月は支出ペースから月末の着地額・予算超過の見込みを表示（日割り予測）
 - 固定費の自動登録（家賃・サブスク等のテンプレートを登録→毎月アプリ起動時に自動生成）
+- 振り返りレポート（`/report`・ホーム下部の「振り返りを見る」から）：収支・前期比（前月比/前週比）・支出トップ・予算超過カテゴリ（月次のみ）をまとめて表示。週次／月次をタブで切替（週次は今週・月次は先月が既定。前/次で期間移動）
+- 月次レポートのプッシュ通知：毎月初めに先月の振り返りを Web Push で配信。Service Worker＋Supabase Edge Function（`send-monthly-report`）＋pg_cron。設定→「記録忘れリマインダー」内の「月次レポートを通知」で ON/OFF（記録忘れリマインダーとは独立。リマインダー有効時のみ操作可）
 - 記録忘れリマインダー（Web Push）：毎日指定時刻に、その日まだ記録が無ければ通知。Service Worker＋Supabase Edge Function（`send-reminders`）＋pg_cron で配信（設定→「記録忘れリマインダー」で時刻設定・ON/OFF）
 - CSV入出力（Money Forward互換フォーマット）：月別エクスポート・一括インポート対応
 - カテゴリごとの固有色アイコン（明細・グラフ・登録フォームで一目で判別）
@@ -115,6 +117,34 @@ http://localhost:3000 を開きます。未ログインの場合は `/login` に
 
 > iOS / iPadOS は 16.4 以上かつ「ホーム画面に追加」した PWA でのみ Web Push が動作します。
 > 配信タイミングはプッシュサービスの都合で前後することがあります（OS のアラームほど厳密ではありません）。
+
+## 月次レポート通知（Web Push）のセットアップ
+
+記録忘れリマインダーと VAPID 鍵・secrets を共有します（追加の secrets は不要）。
+
+1. **migration を適用**：`supabase/migrations/0008_monthly_report.sql`
+   （`push_subscriptions` に `monthly_report_enabled` / `last_report_month` を追加）。
+2. **Edge Function をデプロイ**：`supabase functions deploy send-monthly-report`。
+3. **pg_cron を登録**：毎日 1 回叩けば十分（同月の重複送信は `last_report_month` が抑止）。
+   URL を Vault に保存し、シークレットはリマインダーと共通のものを使う。
+   ```sql
+   -- Vault に保存（一度だけ）
+   select vault.create_secret('https://<project-ref>.supabase.co/functions/v1/send-monthly-report', 'monthly_report_function_url');
+
+   -- 毎日 JST 08:00（UTC 23:00）に実行。先月の取引があり未送信のユーザーへ配信。
+   select cron.schedule('send-monthly-report', '0 23 * * *', $$
+     select net.http_post(
+       url     := (select decrypted_secret from vault.decrypted_secrets where name = 'monthly_report_function_url'),
+       headers := jsonb_build_object(
+         'content-type', 'application/json',
+         'x-reminder-secret', (select decrypted_secret from vault.decrypted_secrets where name = 'reminder_function_secret')
+       ),
+       body    := '{}'::jsonb
+     );
+   $$);
+   ```
+
+> 週次レポートは画面（`/report` の「週次」タブ）でのみ確認でき、プッシュ通知は行いません。
 
 ## ディレクトリ構成
 

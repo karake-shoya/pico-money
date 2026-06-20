@@ -1,5 +1,11 @@
 // 取引データの集計（純粋関数）。DB アクセスから分離し、単体テスト可能にする。
-import type { CategorySlice, MonthlySummary, TxType } from "@/lib/types";
+import type {
+  CategorySlice,
+  MonthlyReport,
+  MonthlySummary,
+  ReportOverBudget,
+  TxType,
+} from "@/lib/types";
 
 // 集計入力の最小形（金額と種別）
 export type AmountRow = { type: TxType; amount: number };
@@ -92,5 +98,52 @@ export function projectMonthEndExpense(
     projectedExpense,
     projectedOver,
     willExceed: projectedExpense > totalBudget,
+  };
+}
+
+// 月次振り返りレポートを組み立てる（純粋関数）。
+// current/previous は月次サマリー、expenseByCategory は当月の支出カテゴリ内訳、
+// budgetByCategory は categoryId → 予算額のマップ（0 や未設定は予算なし扱い）。
+// topN は支出上位の表示件数（既定 3）。
+export function buildMonthlyReport(
+  current: MonthlySummary,
+  previous: MonthlySummary,
+  expenseByCategory: CategorySlice[],
+  budgetByCategory: Record<string, number>,
+  topN = 3
+): MonthlyReport {
+  // 支出上位（金額降順）。元配列は破壊しない。
+  const topExpenses = [...expenseByCategory]
+    .sort((a, b) => b.amount - a.amount)
+    .slice(0, topN);
+
+  // 予算超過カテゴリ（予算が正の値で、実績が予算を超えたもの）。超過額の降順。
+  const overBudget: ReportOverBudget[] = expenseByCategory
+    .map((c) => {
+      const budget = budgetByCategory[c.categoryId] ?? 0;
+      return { c, budget, over: c.amount - budget };
+    })
+    .filter(({ budget, over }) => budget > 0 && over > 0)
+    .map(({ c, budget, over }) => ({
+      categoryId: c.categoryId,
+      name: c.name,
+      icon: c.icon,
+      spent: c.amount,
+      budget,
+      over,
+    }))
+    .sort((a, b) => b.over - a.over);
+
+  return {
+    current,
+    previous,
+    deltas: {
+      income: current.income - previous.income,
+      expense: current.expense - previous.expense,
+      balance: current.balance - previous.balance,
+      savingsRate: current.savingsRate - previous.savingsRate,
+    },
+    topExpenses,
+    overBudget,
   };
 }

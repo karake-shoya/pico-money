@@ -2,11 +2,13 @@ import { describe, expect, it } from "vitest";
 import {
   aggregateCategoryBreakdown,
   aggregateMonthlySummaries,
+  buildMonthlyReport,
   projectMonthEndExpense,
   summarize,
   type CategoryRow,
   type DatedRow,
 } from "@/lib/summary";
+import type { CategorySlice, MonthlySummary } from "@/lib/types";
 
 describe("summarize", () => {
   it("収入・支出・収支・貯蓄率を集計する", () => {
@@ -121,5 +123,68 @@ describe("projectMonthEndExpense", () => {
       projectedOver: 3000,
       willExceed: true,
     });
+  });
+});
+
+describe("buildMonthlyReport", () => {
+  const current: MonthlySummary = {
+    income: 300000,
+    expense: 200000,
+    balance: 100000,
+    savingsRate: 33,
+  };
+  const previous: MonthlySummary = {
+    income: 280000,
+    expense: 230000,
+    balance: 50000,
+    savingsRate: 18,
+  };
+  // 当月の支出カテゴリ内訳（sort_order 順で渡される想定）
+  const expenseByCategory: CategorySlice[] = [
+    { categoryId: "food", name: "食費", icon: "🍜", amount: 80000, sortOrder: 1 },
+    { categoryId: "fun", name: "娯楽", icon: "🎮", amount: 90000, sortOrder: 5 },
+    { categoryId: "misc", name: "雑費", icon: "🧷", amount: 30000, sortOrder: 9 },
+  ];
+
+  it("当月・前月サマリーと前月比（増減）を返す", () => {
+    const r = buildMonthlyReport(current, previous, [], {});
+    expect(r.current).toEqual(current);
+    expect(r.previous).toEqual(previous);
+    expect(r.deltas).toEqual({
+      income: 20000, // 300000 - 280000
+      expense: -30000, // 200000 - 230000（支出減）
+      balance: 50000, // 100000 - 50000
+      savingsRate: 15, // 33 - 18
+    });
+  });
+
+  it("支出トップN（既定3）を金額降順で返す", () => {
+    const r = buildMonthlyReport(current, previous, expenseByCategory, {});
+    expect(r.topExpenses.map((c) => c.categoryId)).toEqual([
+      "fun", // 90000
+      "food", // 80000
+      "misc", // 30000
+    ]);
+  });
+
+  it("topN を指定でき、上位のみ返す", () => {
+    const r = buildMonthlyReport(current, previous, expenseByCategory, {}, 2);
+    expect(r.topExpenses.map((c) => c.categoryId)).toEqual(["fun", "food"]);
+  });
+
+  it("予算超過カテゴリを超過額の降順で返す", () => {
+    // 食費: 予算50000 / 実績80000 → 30000超過, 娯楽: 予算100000 / 実績90000 → 超過なし
+    const budgetByCategory = { food: 50000, fun: 100000, misc: 20000 };
+    const r = buildMonthlyReport(current, previous, expenseByCategory, budgetByCategory);
+    expect(r.overBudget).toEqual([
+      { categoryId: "food", name: "食費", icon: "🍜", spent: 80000, budget: 50000, over: 30000 },
+      { categoryId: "misc", name: "雑費", icon: "🧷", spent: 30000, budget: 20000, over: 10000 },
+    ]);
+  });
+
+  it("予算未設定（0含む）のカテゴリは超過判定の対象外", () => {
+    const budgetByCategory = { food: 0 }; // 0は未設定扱い
+    const r = buildMonthlyReport(current, previous, expenseByCategory, budgetByCategory);
+    expect(r.overBudget).toEqual([]);
   });
 });

@@ -73,6 +73,41 @@ export function monthLabel(month: string): string {
   return `${y}年${m}月`;
 }
 
+// Date → 'YYYY-MM-DD'（ローカル）
+function ymd(d: Date): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(
+    d.getDate()
+  ).padStart(2, '0')}`;
+}
+
+// 指定日が属する週（月曜始まり）の月曜日を 'YYYY-MM-DD' で返す。
+export function startOfWeek(date: string): string {
+  const [y, m, d] = date.split('-').map(Number);
+  const dt = new Date(y, m - 1, d);
+  const diff = (dt.getDay() + 6) % 7; // 月曜からの経過日数（日曜=6）
+  dt.setDate(dt.getDate() - diff);
+  return ymd(dt);
+}
+
+// 週（月曜の 'YYYY-MM-DD'）を delta 週ずらす（負値で過去方向）。
+export function shiftWeek(weekStart: string, delta: number): string {
+  const [y, m, d] = weekStart.split('-').map(Number);
+  return ymd(new Date(y, m - 1, d + delta * 7));
+}
+
+// 週の [開始日(月), 翌週開始日)（YYYY-MM-DD）。SQL の範囲フィルタに使う。
+export function weekRange(weekStart: string): { start: string; end: string } {
+  return { start: weekStart, end: shiftWeek(weekStart, 1) };
+}
+
+// 週の表示ラベル（例: 6/15〜6/21）。終了日は週末（日曜）。
+export function weekLabel(weekStart: string): string {
+  const [y, m, d] = weekStart.split('-').map(Number);
+  const start = new Date(y, m - 1, d);
+  const end = new Date(y, m - 1, d + 6);
+  return `${start.getMonth() + 1}/${start.getDate()}〜${end.getMonth() + 1}/${end.getDate()}`;
+}
+
 // YYYY-MM-DD の表示ラベル（例: 6/17(火)）
 const WEEKDAYS = ['日', '月', '火', '水', '木', '金', '土'];
 export function dateLabel(date: string): string {
