@@ -32,9 +32,11 @@ export async function createRecurring(
   } = await supabase.auth.getUser();
   if (!user) return { error: 'ログインが必要です。' };
 
+  // last_generated_month を当月にしておき、登録した瞬間に当月分が
+  // 自動生成されるのを防ぐ（自動生成は翌月以降から開始する）。
   const { error } = await supabase
     .from('recurring_transactions')
-    .insert({ ...parsed.value, user_id: user.id });
+    .insert({ ...parsed.value, user_id: user.id, last_generated_month: currentMonth() });
   if (error) return { error: '登録に失敗しました。' };
 
   revalidatePath('/', 'layout');
