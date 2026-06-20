@@ -111,7 +111,7 @@ export function TransactionList({
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="メモ・カテゴリ名で検索"
-          className="w-full rounded-full border border-[var(--color-line)] bg-[var(--color-surface)] py-2 pl-9 pr-9 text-sm text-[var(--color-ink)] outline-none placeholder:text-[var(--color-muted)] focus:border-[var(--color-brand)]"
+          className="w-full rounded-full border border-[var(--color-line)] bg-[var(--color-surface)] py-2 pl-9 pr-9 text-base text-[var(--color-ink)] outline-none placeholder:text-[var(--color-muted)] focus:border-[var(--color-brand)]"
         />
         {query !== "" && (
           <button
