@@ -134,7 +134,10 @@ export function HomeCarousel({
     setDx(delta > 0 ? -w : w); // 翌月は左へ、前月は右へ
   };
 
-  const handleTransitionEnd = () => {
+  const handleTransitionEnd = (e: React.TransitionEvent<HTMLDivElement>) => {
+    // 子要素（支出率ゲージの transition-all 等）のバブリングを無視し、
+    // トラック自身の transform 完了だけを確定処理として扱う。
+    if (e.target !== e.currentTarget || e.propertyName !== "transform") return;
     if (!animating) return;
     const delta = dx < 0 ? 1 : -1; // 確定時の dx は commit が入れた符号付き目標値
     setNoTransition(true);
