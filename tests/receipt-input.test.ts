@@ -26,9 +26,9 @@ function cat(id: string, name: string, type: "income" | "expense"): Category {
 const TODAY = "2026-06-20";
 
 describe("normalizeReceipt", () => {
-  it("妥当な抽出結果をプリフィルへ変換する", () => {
+  it("妥当な抽出結果をプリフィルへ変換する（メモは店名のみ）", () => {
     const r = normalizeReceipt(
-      { amount: 1280, date: "2026-06-18", category_id: "c-food", store: "スーパー", memo: "牛乳" },
+      { amount: 1280, date: "2026-06-18", category_id: "c-food", store: "スーパー" },
       cats,
       TODAY
     );
@@ -37,8 +37,17 @@ describe("normalizeReceipt", () => {
       amount: 1280,
       date: "2026-06-18",
       category_id: "c-food",
-      memo: "スーパー 牛乳",
+      memo: "スーパー",
     });
+  });
+
+  it("店名が読めなければメモは空欄", () => {
+    const r = normalizeReceipt(
+      { amount: 500, date: "2026-06-18", category_id: "c-food", store: "" },
+      cats,
+      TODAY
+    );
+    expect(r.memo).toBe("");
   });
 
   it("金額の記号・カンマ・小数を除去して整数化する", () => {

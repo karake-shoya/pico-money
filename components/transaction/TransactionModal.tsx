@@ -142,16 +142,8 @@ export function TransactionModalProvider({
         className="hidden"
       />
 
-      {/* FAB（下部固定）。レシート読み取り（カメラ）と取引登録（＋）を縦に並べる。 */}
+      {/* FAB（下部固定）。取引登録（＋）。レシート読み取りは入力画面の左上カメラから。 */}
       <div className="pointer-events-none fixed inset-x-0 bottom-[calc(64px+env(safe-area-inset-bottom))] z-30 mx-auto flex max-w-[480px] flex-col items-end gap-3 px-4">
-        <button
-          type="button"
-          onClick={pickReceipt}
-          aria-label="レシートを読み取る"
-          className="pointer-events-auto flex h-12 w-12 items-center justify-center rounded-full border border-[var(--color-line)] bg-[var(--color-surface)] text-[var(--color-ink)] shadow-lg transition active:scale-95"
-        >
-          <Camera className="h-6 w-6" strokeWidth={2} />
-        </button>
         <button
           type="button"
           onClick={openNew}
@@ -188,7 +180,17 @@ export function TransactionModalProvider({
               >
                 <Trash2 className="h-5 w-5" />
               </button>
-            ) : undefined
+            ) : (
+              // 新規入力時はレシート読み取りの導線（左上カメラ）。
+              <button
+                type="button"
+                onClick={pickReceipt}
+                aria-label="レシートを読み取る"
+                className="flex h-8 w-8 items-center justify-center rounded-full text-[var(--color-ink)] transition active:bg-[var(--color-bg)]"
+              >
+                <Camera className="h-5 w-5" />
+              </button>
+            )
           }
         >
           {scanNote && (

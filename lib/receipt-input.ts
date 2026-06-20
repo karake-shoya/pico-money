@@ -7,7 +7,6 @@ export type RawReceiptResult = {
   date?: string | null;
   category_id?: string | null;
   store?: string | null;
-  memo?: string | null;
 };
 
 // 取引フォームのプリフィル（新規入力の初期値）。レシートは支出固定。
@@ -65,10 +64,11 @@ export function normalizeReceipt(
   const matched = expenseCats.find((c) => c.id === rawCat);
   const category_id = matched ? matched.id : unmatchedId;
 
-  // 店名（store）を優先し、品目メモ（memo）を補助として結合する。
-  const store = typeof raw.store === "string" ? raw.store.trim() : "";
-  const memoRaw = typeof raw.memo === "string" ? raw.memo.trim() : "";
-  const memo = [store, memoRaw].filter(Boolean).join(" ").slice(0, 100);
+  // メモには店名のみを入れる（商品名は読み取らない）。読めなければ空欄。
+  const memo = (typeof raw.store === "string" ? raw.store.trim() : "").slice(
+    0,
+    100
+  );
 
   return {
     type: "expense",

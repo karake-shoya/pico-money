@@ -48,9 +48,8 @@ export async function scanReceipt(
         description: '最も適切な支出カテゴリのID。該当が無ければ "unmatched"。',
       },
       store: { type: 'string', description: '店名。読めなければ空文字。' },
-      memo: { type: 'string', description: '主な品目など短いメモ。無ければ空文字。' },
     },
-    required: ['amount', 'date', 'category_id', 'store', 'memo'],
+    required: ['amount', 'date', 'category_id', 'store'],
     additionalProperties: false,
   } as const;
 
@@ -76,7 +75,8 @@ export async function scanReceipt(
             {
               type: 'text',
               text:
-                'このレシート画像から、合計金額・利用日・店名・主な品目を読み取ってください。\n' +
+                'このレシート画像から、合計金額・利用日・店名を読み取ってください。\n' +
+                '個々の商品名は読み取る必要はありません。\n' +
                 '合計金額は税込の支払総額（整数の円）。利用日は YYYY-MM-DD。\n' +
                 '次の支出カテゴリ一覧から最も近いものを1つ選び、その ID を category_id に入れてください。' +
                 '当てはまるものが無ければ "unmatched" を返してください。\n' +
