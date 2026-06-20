@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { LayoutGrid, type LucideIcon } from "lucide-react";
+import { LayoutGrid, Search, X, type LucideIcon } from "lucide-react";
 import { TransactionItem } from "./TransactionItem";
 import { categoryIcon } from "@/lib/category-icon";
 import { formatYen } from "@/lib/format";
@@ -20,6 +20,8 @@ export function TransactionList({
   const [selected, setSelected] = useState<string | null>(
     initialCategoryId ?? null
   );
+  // メモ・カテゴリ名のテキスト検索（カテゴリ絞り込みと AND で併用）
+  const [query, setQuery] = useState("");
 
   // 出現するカテゴリを集計（件数）。
   // 支出グループ→収入グループの順に、各グループ内は sort_order 順で並べる
@@ -73,13 +75,21 @@ export function TransactionList({
     [categories]
   );
 
-  const filtered = useMemo(
-    () =>
-      selected === null
-        ? transactions
-        : transactions.filter((tx) => (tx.category?.id ?? "unknown") === selected),
-    [transactions, selected]
-  );
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    return transactions.filter((tx) => {
+      // カテゴリ絞り込み
+      if (selected !== null && (tx.category?.id ?? "unknown") !== selected) {
+        return false;
+      }
+      // テキスト検索（メモ・カテゴリ名のいずれかに含まれる）
+      if (q !== "") {
+        const haystack = `${tx.memo ?? ""} ${tx.category?.name ?? ""}`.toLowerCase();
+        if (!haystack.includes(q)) return false;
+      }
+      return true;
+    });
+  }, [transactions, selected, query]);
 
   // 選択中フィルタの合計（収入は＋、支出は−の絶対値合計ではなく差額で表示）
   const total = useMemo(
@@ -93,6 +103,28 @@ export function TransactionList({
 
   return (
     <div className="space-y-3">
+      {/* メモ・カテゴリ名の検索 */}
+      <div className="relative">
+        <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--color-muted)]" />
+        <input
+          type="search"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="メモ・カテゴリ名で検索"
+          className="w-full rounded-full border border-[var(--color-line)] bg-[var(--color-surface)] py-2 pl-9 pr-9 text-sm text-[var(--color-ink)] outline-none placeholder:text-[var(--color-muted)] focus:border-[var(--color-brand)]"
+        />
+        {query !== "" && (
+          <button
+            type="button"
+            onClick={() => setQuery("")}
+            aria-label="検索をクリア"
+            className="absolute right-2.5 top-1/2 -translate-y-1/2 rounded-full p-1 text-[var(--color-muted)] transition active:scale-90"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        )}
+      </div>
+
       {/* カテゴリフィルタ。支出・収入で行を分けて横スクロール表示する。 */}
       <div className="space-y-2">
         {/* 支出の行（先頭に「すべて」チップを置く） */}
@@ -148,11 +180,17 @@ export function TransactionList({
         </span>
       </div>
 
-      <ul className="space-y-2">
-        {filtered.map((tx) => (
-          <TransactionItem key={tx.id} tx={tx} />
-        ))}
-      </ul>
+      {filtered.length === 0 ? (
+        <div className="rounded-[var(--radius-card)] border border-[var(--color-line)] bg-[var(--color-surface)] px-4 py-12 text-center text-sm text-[var(--color-muted)]">
+          条件に一致する取引がありません。
+        </div>
+      ) : (
+        <ul className="space-y-2">
+          {filtered.map((tx) => (
+            <TransactionItem key={tx.id} tx={tx} />
+          ))}
+        </ul>
+      )}
     </div>
   );
 }
