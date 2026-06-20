@@ -3,12 +3,13 @@
 import { useRef, useState } from "react";
 import Link from "next/link";
 import { Cell, Pie, PieChart, ResponsiveContainer } from "recharts";
-import { Wallet } from "lucide-react";
+import { TrendingUp, Wallet } from "lucide-react";
 import { useMonth } from "@/components/MonthProvider";
 import { useHorizontalSwipe } from "@/components/useHorizontalSwipe";
 import { BudgetSheet } from "@/components/budget/BudgetSheet";
 import { CategoryBadge, categoryColor } from "@/lib/category-icon";
-import { formatYen, shiftMonth } from "@/lib/format";
+import { currentMonth, daysInMonth, formatYen, shiftMonth, todayDate } from "@/lib/format";
+import { projectMonthEndExpense } from "@/lib/summary";
 import type { Category, CategorySlice, TxType } from "@/lib/types";
 
 type Props = {
@@ -54,6 +55,16 @@ export function Charts({
   const budgetRate =
     totalBudget > 0 ? Math.round((total / totalBudget) * 100) : 0;
   const budgetOver = total > totalBudget;
+
+  // 当月のみ：支出ペースから月末の着地・超過を予測する。
+  // 月初2日までは線形外挿が暴れるため非表示（elapsedDays >= 3）。
+  const isCurrentMonth = month === currentMonth();
+  const elapsedDays = Number(todayDate().slice(8, 10));
+  const showProjection =
+    isExpense && totalBudget > 0 && isCurrentMonth && elapsedDays >= 3;
+  const projection = showProjection
+    ? projectMonthEndExpense(total, elapsedDays, daysInMonth(month), totalBudget)
+    : null;
 
   return (
     <div
@@ -109,6 +120,34 @@ export function Charts({
                   style={{ width: `${Math.min(budgetRate, 100)}%` }}
                 />
               </div>
+              {projection && (
+                <p
+                  className={`mt-1.5 flex items-center gap-1 text-xs ${
+                    projection.willExceed
+                      ? "text-[var(--color-expense)]"
+                      : "text-[var(--color-muted)]"
+                  }`}
+                >
+                  <TrendingUp className="h-3.5 w-3.5 shrink-0" />
+                  {projection.willExceed ? (
+                    <span>
+                      このペースだと月末{" "}
+                      <span className="tabular font-semibold">
+                        {formatYen(projection.projectedExpense)}
+                      </span>{" "}
+                      → {formatYen(projection.projectedOver)} 超過の見込み
+                    </span>
+                  ) : (
+                    <span>
+                      このペースなら予算内（月末見込み{" "}
+                      <span className="tabular">
+                        {formatYen(projection.projectedExpense)}
+                      </span>
+                      ）
+                    </span>
+                  )}
+                </p>
+              )}
             </>
           ) : (
             <p className="py-2 text-sm text-[var(--color-muted)]">

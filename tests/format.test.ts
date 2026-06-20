@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   dateLabel,
+  daysInMonth,
   formatSignedYen,
   formatYen,
   lastNMonths,
@@ -66,6 +67,17 @@ describe("monthRange", () => {
       start: "2026-01-01",
       end: "2026-02-01",
     });
+  });
+});
+
+describe("daysInMonth", () => {
+  it("月ごとの日数を返す", () => {
+    expect(daysInMonth("2026-01")).toBe(31);
+    expect(daysInMonth("2026-06")).toBe(30);
+  });
+  it("2月の日数（平年28日・閏年29日）", () => {
+    expect(daysInMonth("2026-02")).toBe(28);
+    expect(daysInMonth("2028-02")).toBe(29);
   });
 });
 

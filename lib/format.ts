@@ -41,6 +41,12 @@ export function monthRange(month: string): { start: string; end: string } {
   return { start, end };
 }
 
+// 指定月（YYYY-MM）の日数を返す（28〜31）。new Date の日に0を渡すと前月末日になる性質を利用。
+export function daysInMonth(month: string): number {
+  const [y, m] = month.split('-').map(Number);
+  return new Date(y, m, 0).getDate();
+}
+
 // 指定月を delta ヶ月ずらした YYYY-MM を返す（負値で過去方向）。
 export function shiftMonth(month: string, delta: number): string {
   const [y, m] = month.split('-').map(Number);

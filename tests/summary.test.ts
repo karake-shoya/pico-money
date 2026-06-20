@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   aggregateCategoryBreakdown,
   aggregateMonthlySummaries,
+  projectMonthEndExpense,
   summarize,
   type CategoryRow,
   type DatedRow,
@@ -88,5 +89,37 @@ describe("aggregateCategoryBreakdown", () => {
     expect(aggregateCategoryBreakdown(rows)).toEqual([
       { categoryId: "unknown", name: "不明", icon: null, amount: 100, sortOrder: 999 },
     ]);
+  });
+});
+
+describe("projectMonthEndExpense", () => {
+  it("半月で予算ペースを超えていれば月末超過を見込む", () => {
+    // 30日中15日で7万円 → 月末14万円見込み、予算10万円に対し4万円超過
+    expect(projectMonthEndExpense(70000, 15, 30, 100000)).toEqual({
+      projectedExpense: 140000,
+      projectedOver: 40000,
+      willExceed: true,
+    });
+  });
+  it("予算内ペースなら超過見込みは0", () => {
+    // 30日中15日で3万円 → 月末6万円見込み、予算10万円内
+    expect(projectMonthEndExpense(30000, 15, 30, 100000)).toEqual({
+      projectedExpense: 60000,
+      projectedOver: 0,
+      willExceed: false,
+    });
+  });
+  it("着地見込みは四捨五入する", () => {
+    // 30日中7日で10000円 → 10000/7*30 = 42857.14... → 42857
+    expect(projectMonthEndExpense(10000, 7, 30, 50000).projectedExpense).toBe(
+      42857
+    );
+  });
+  it("経過日数が0なら実績値をそのまま返す（ゼロ除算回避）", () => {
+    expect(projectMonthEndExpense(8000, 0, 30, 5000)).toEqual({
+      projectedExpense: 8000,
+      projectedOver: 3000,
+      willExceed: true,
+    });
   });
 });

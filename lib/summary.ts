@@ -66,3 +66,31 @@ export function aggregateCategoryBreakdown(
   }
   return [...map.values()].sort((a, b) => a.sortOrder - b.sortOrder);
 }
+
+// 予算ペース予測の結果
+export type BudgetPaceProjection = {
+  projectedExpense: number; // 月末着地見込み（円・四捨五入）
+  projectedOver: number; // 予算超過見込み額（超過しないなら 0）
+  willExceed: boolean; // 月末に予算を超える見込みか
+};
+
+// 日割りペースで月末の支出着地を線形予測する。
+// projectedExpense = 現支出 / 経過日数 * 月の日数。
+// 経過日数が不正（0以下）ならゼロ除算を避け、現支出を着地値として扱う。
+export function projectMonthEndExpense(
+  currentExpense: number,
+  elapsedDays: number,
+  daysInMonthCount: number,
+  totalBudget: number
+): BudgetPaceProjection {
+  const projectedExpense =
+    elapsedDays > 0 && daysInMonthCount > 0
+      ? Math.round((currentExpense / elapsedDays) * daysInMonthCount)
+      : currentExpense;
+  const projectedOver = Math.max(0, projectedExpense - totalBudget);
+  return {
+    projectedExpense,
+    projectedOver,
+    willExceed: projectedExpense > totalBudget,
+  };
+}
