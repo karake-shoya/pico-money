@@ -13,6 +13,7 @@ import { useRouter } from "next/navigation";
 import { Camera, Loader2, Plus, Trash2 } from "lucide-react";
 import { BottomSheet } from "@/components/BottomSheet";
 import { TransactionForm } from "./TransactionForm";
+import { ReceiptCamera } from "./ReceiptCamera";
 import { deleteTransaction } from "@/lib/actions/transactions";
 import { scanReceipt } from "@/lib/actions/receipt";
 import { resizeImageToBase64 } from "@/lib/image-resize";
@@ -54,6 +55,8 @@ export function TransactionModalProvider({
   const [scanning, setScanning] = useState(false);
   // 読み取り失敗の注意書き（空フォームの先頭に出す）。
   const [scanNote, setScanNote] = useState<string | null>(null);
+  // アプリ内カメラ（getUserMedia）の表示。
+  const [cameraOpen, setCameraOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const openNew = useCallback(() => {
@@ -72,43 +75,58 @@ export function TransactionModalProvider({
   }, []);
   const close = useCallback(() => setOpen(false), []);
 
-  // カメラ/アルバムを開く。
+  // レシート読み取りを開始する。アプリ内カメラ（無音）が使えればそれを開き、
+  // 使えない端末では従来の OS 選択ダイアログ（撮影/アルバム）にフォールバックする。
   function pickReceipt() {
-    fileInputRef.current?.click();
+    if (typeof navigator.mediaDevices?.getUserMedia === "function") {
+      setCameraOpen(true);
+    } else {
+      fileInputRef.current?.click();
+    }
   }
 
-  // 画像選択 → 縮小 → Claude 読み取り → フォームをプリフィル表示。
-  async function handleReceiptFile(
-    e: React.ChangeEvent<HTMLInputElement>
-  ) {
+  // 読み取り失敗時は空フォームへフォールバックし、注意書きを添えて手入力を促す。
+  function openEmptyFormWithNote(note: string) {
+    setEditing(null);
+    setPrefill(null);
+    setFormKey((k) => k + 1);
+    setScanNote(note);
+    setOpen(true);
+  }
+
+  // 縮小済み base64 を Claude へ渡して読み取り → フォームをプリフィル表示する共通処理。
+  // ファイル選択経路・アプリ内カメラ経路の双方から呼ぶ。
+  async function runScan(base64: string, mediaType: "image/jpeg" | "image/png") {
+    setScanning(true);
+    try {
+      const result = await scanReceipt(base64, mediaType);
+      if (result.ok) {
+        setEditing(null);
+        setFormKey((k) => k + 1);
+        setPrefill(result.prefill);
+        setScanNote(null);
+        setOpen(true);
+      } else {
+        openEmptyFormWithNote(result.error);
+      }
+    } catch {
+      openEmptyFormWithNote("画像を処理できませんでした。手入力してください。");
+    } finally {
+      setScanning(false);
+    }
+  }
+
+  // 画像選択 → 縮小 → 読み取り。
+  async function handleReceiptFile(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     // 同じファイルを再選択しても onChange が発火するようリセット。
     e.target.value = "";
     if (!file) return;
-
-    setScanning(true);
     try {
       const { base64, mediaType } = await resizeImageToBase64(file);
-      const result = await scanReceipt(base64, mediaType);
-      setEditing(null);
-      setFormKey((k) => k + 1);
-      if (result.ok) {
-        setPrefill(result.prefill);
-        setScanNote(null);
-      } else {
-        // 失敗時は空フォームへフォールバックし、手入力を促す。
-        setPrefill(null);
-        setScanNote(result.error);
-      }
-      setOpen(true);
+      await runScan(base64, mediaType);
     } catch {
-      setEditing(null);
-      setPrefill(null);
-      setFormKey((k) => k + 1);
-      setScanNote("画像を処理できませんでした。手入力してください。");
-      setOpen(true);
-    } finally {
-      setScanning(false);
+      openEmptyFormWithNote("画像を処理できませんでした。手入力してください。");
     }
   }
 
@@ -132,15 +150,35 @@ export function TransactionModalProvider({
     <ModalContext.Provider value={{ openNew, openEdit }}>
       {children}
 
-      {/* レシート撮影用の隠し input（カメラ優先） */}
+      {/* アルバム選択・カメラ非対応時のフォールバック用の隠し input。
+          capture を付けないことで OS 側で「撮影/アルバム」を選べる。 */}
       <input
         ref={fileInputRef}
         type="file"
         accept="image/*"
-        capture="environment"
         onChange={handleReceiptFile}
         className="hidden"
       />
+
+      {/* アプリ内カメラ（無音）。シャッターで現在フレームを取り込み読み取りへ。 */}
+      {cameraOpen && (
+        <ReceiptCamera
+          onCapture={(base64, mediaType) => {
+            setCameraOpen(false);
+            void runScan(base64, mediaType);
+          }}
+          onPickAlbum={() => {
+            setCameraOpen(false);
+            fileInputRef.current?.click();
+          }}
+          onClose={() => setCameraOpen(false)}
+          onUnsupported={() => {
+            // カメラを使えない端末は従来の選択ダイアログへフォールバック。
+            setCameraOpen(false);
+            fileInputRef.current?.click();
+          }}
+        />
+      )}
 
       {/* FAB（下部固定）。取引登録（＋）。レシート読み取りは入力画面の左上カメラから。 */}
       <div className="pointer-events-none fixed inset-x-0 bottom-[calc(64px+env(safe-area-inset-bottom))] z-30 mx-auto flex max-w-[480px] flex-col items-end gap-3 px-4">

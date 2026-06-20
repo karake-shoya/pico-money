@@ -10,22 +10,40 @@ export type ResizedImage = {
   mediaType: "image/jpeg";
 };
 
-// File（カメラ/アルバム画像）を長辺 MAX_EDGE・JPEG へ縮小し、base64 を返す。
-export async function resizeImageToBase64(file: File): Promise<ResizedImage> {
-  const bitmap = await loadBitmap(file);
-  const { width, height } = fitWithin(bitmap.width, bitmap.height, MAX_EDGE);
+// 描画ソース（画像 / 映像）を長辺 MAX_EDGE・JPEG へ縮小し、base64 を返す共通処理。
+function drawToBase64(
+  source: CanvasImageSource,
+  srcWidth: number,
+  srcHeight: number
+): ResizedImage {
+  const { width, height } = fitWithin(srcWidth, srcHeight, MAX_EDGE);
 
   const canvas = document.createElement("canvas");
   canvas.width = width;
   canvas.height = height;
   const ctx = canvas.getContext("2d");
   if (!ctx) throw new Error("canvas コンテキストを取得できませんでした。");
-  ctx.drawImage(bitmap, 0, 0, width, height);
+  ctx.drawImage(source, 0, 0, width, height);
 
   const dataUrl = canvas.toDataURL("image/jpeg", QUALITY);
   const base64 = dataUrl.split(",")[1] ?? "";
   if (!base64) throw new Error("画像の変換に失敗しました。");
   return { base64, mediaType: "image/jpeg" };
+}
+
+// File（カメラ/アルバム画像）を長辺 MAX_EDGE・JPEG へ縮小し、base64 を返す。
+export async function resizeImageToBase64(file: File): Promise<ResizedImage> {
+  const bitmap = await loadBitmap(file);
+  return drawToBase64(bitmap, bitmap.width, bitmap.height);
+}
+
+// 再生中の <video> の現在フレームを長辺 MAX_EDGE・JPEG へ縮小し、base64 を返す。
+// アプリ内カメラ（getUserMedia のプレビュー）からの取り込み用。File 版と縮小条件を揃える。
+export function captureVideoFrameToBase64(video: HTMLVideoElement): ResizedImage {
+  const sw = video.videoWidth;
+  const sh = video.videoHeight;
+  if (!sw || !sh) throw new Error("カメラ映像をまだ取得できていません。");
+  return drawToBase64(video, sw, sh);
 }
 
 // createImageBitmap が使えればそれを、無ければ <img> 経由で読み込む。
