@@ -1,7 +1,8 @@
 import { CsvButtons } from "@/components/transaction/CsvButtons";
+import { MonthNav } from "@/components/MonthNav";
 import { TransactionList } from "@/components/transaction/TransactionList";
 import { getTransactionsForMonth, getCategories } from "@/lib/queries";
-import { monthLabel, normalizeMonth } from "@/lib/format";
+import { normalizeMonth } from "@/lib/format";
 
 // 入出金（明細リスト）。選択中の月の取引を日付降順で表示。
 // ?cat=<categoryId> が指定されていれば、そのカテゴリで初期絞り込みする（家計簿からのドリルダウン）。
@@ -20,9 +21,7 @@ export default async function TransactionsPage({
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
-        <p className="text-sm text-[var(--color-muted)]">
-          {monthLabel(month)}の入出金
-        </p>
+        <MonthNav />
         <div className="flex items-center gap-2">
           <CsvButtons transactions={transactions} month={month} categories={categories} />
           <p className="text-sm text-[var(--color-muted)]">

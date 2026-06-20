@@ -1,5 +1,6 @@
 import { Charts } from "@/components/charts/Charts";
 import { MonthlyTrend, type TrendPoint } from "@/components/charts/MonthlyTrend";
+import { MonthNav } from "@/components/MonthNav";
 import {
   getBudgets,
   getCategories,
@@ -48,9 +49,7 @@ export default async function ChartsPage({
 
   return (
     <div className="space-y-3">
-      <p className="text-sm text-[var(--color-muted)]">
-        {monthLabel(month)}の家計簿
-      </p>
+      <MonthNav />
       <MonthlyTrend data={trendData} />
       <Charts
         expenseSlices={expenseSlices}
