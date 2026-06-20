@@ -1,9 +1,11 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LogOut, Settings, Wallet } from "lucide-react";
+import { CalendarClock, LogOut, Settings, Wallet } from "lucide-react";
 import { useMonth } from "@/components/MonthProvider";
+import { currentMonth } from "@/lib/format";
 import { logout } from "@/lib/actions/auth";
 
 const HOME_PATH = "/"; // カルーセルで先読み表示するページ（月変更で再取得不要）
@@ -14,6 +16,12 @@ const HOME_PATH = "/"; // カルーセルで先読み表示するページ（月
 export function AppHeader() {
   const pathname = usePathname();
   const { month, setMonth } = useMonth();
+
+  // 当月判定はクライアントのローカル時刻に依存するためマウント後に行う
+  const [mounted, setMounted] = useState(false);
+  // eslint-disable-next-line react-hooks/set-state-in-effect
+  useEffect(() => setMounted(true), []);
+  const showToday = mounted && month !== currentMonth();
 
   function onChangeMonth(value: string) {
     // ホームはカルーセルが先読みデータで即反映するため再取得不要。
@@ -29,6 +37,17 @@ export function AppHeader() {
           <span>Pico Money</span>
         </span>
         <div className="flex items-center gap-2">
+          {showToday && (
+            <button
+              type="button"
+              onClick={() => onChangeMonth(currentMonth())}
+              className="flex h-9 w-9 items-center justify-center rounded-lg text-[var(--color-brand)] active:bg-[var(--color-bg)]"
+              aria-label="今月に戻る"
+              title="今月に戻る"
+            >
+              <CalendarClock className="h-[18px] w-[18px]" strokeWidth={1.8} />
+            </button>
+          )}
           <input
             type="month"
             value={month}

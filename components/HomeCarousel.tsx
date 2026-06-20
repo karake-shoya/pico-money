@@ -1,11 +1,10 @@
 "use client";
 
-import { memo, useEffect, useRef, useState } from "react";
+import { memo, useRef, useState } from "react";
 import { ArrowDownLeft, ArrowUpRight, PiggyBank } from "lucide-react";
 import { useMonth } from "@/components/MonthProvider";
 import { useHorizontalSwipe } from "@/components/useHorizontalSwipe";
 import {
-  currentMonth,
   formatSignedYen,
   formatYen,
   monthLabel,
@@ -121,7 +120,6 @@ export function HomeCarousel({
   const [dragging, setDragging] = useState(false);
   const [animating, setAnimating] = useState(false); // 確定スライド中
   const [noTransition, setNoTransition] = useState(false); // 中央への瞬間リセット用
-  const [mounted, setMounted] = useState(false);
 
   const areaRef = useRef<HTMLDivElement>(null);
 
@@ -148,11 +146,6 @@ export function HomeCarousel({
       requestAnimationFrame(() => setNoTransition(false))
     );
   };
-
-  // 当月判定はクライアントのローカル時刻に依存するためマウント後に行う
-  // eslint-disable-next-line react-hooks/set-state-in-effect
-  useEffect(() => setMounted(true), []);
-  const showToday = mounted && month !== currentMonth();
 
   const summaryFor = (m: string) => summaries[m] ?? EMPTY;
   const prev = shiftMonth(month, -1);
@@ -189,18 +182,7 @@ export function HomeCarousel({
         >
           ‹
         </button>
-        <div className="flex flex-col items-center">
-          <span className="text-lg font-bold">{monthLabel(month)}</span>
-          {showToday && (
-            <button
-              type="button"
-              onClick={() => setMonth(currentMonth(), { navigate: false })}
-              className="mt-0.5 rounded-full px-2 py-0.5 text-xs font-medium text-[var(--color-brand)] active:bg-[var(--color-bg)]"
-            >
-              今月に戻る
-            </button>
-          )}
-        </div>
+        <span className="text-lg font-bold">{monthLabel(month)}</span>
         <button
           type="button"
           onClick={() => commit(1)}
