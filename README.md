@@ -8,6 +8,7 @@
 - 月セレクタによる月切り替え（全画面で同じ月を共有）
 - 明細リスト（日付降順 / タップで編集 / 左スワイプ・ボタンで削除）
 - FAB（＋・右下）からのボトムシートで取引を登録・編集（支出/収入はタブ切替）
+- レシート読み取り（カメラ FAB）：撮影画像を Claude（Sonnet 4.6）が解析し、金額・日付・店名・カテゴリを取引フォームへ自動入力（確認・編集してから保存。画像は保存しない）
 - 金額入力は電卓パネル（数値＋四則演算、確定時に整数へ丸め）
 - グラフ：カテゴリ別ドーナツ（収入・支出切替 / 横スワイプで月移動）
 - カテゴリ別の月予算（毎月共通）と消化率バー・全体予算ゲージ
@@ -24,6 +25,7 @@
 - Tailwind CSS v4
 - Supabase（Auth + Postgres + RLS）
 - recharts（グラフ）
+- Anthropic Claude（`@anthropic-ai/sdk` / Sonnet 4.6・レシート読み取り）
 - デプロイ先: Vercel
 
 ## セットアップ
@@ -37,7 +39,7 @@ npm install
 ### 2. Supabase プロジェクトの準備
 
 1. [Supabase](https://supabase.com/) でプロジェクトを作成。
-2. SQL Editor で `supabase/migrations/0001_init.sql` を実行
+2. SQL Editor で `supabase/migrations/` 配下を番号順（`0001` → `0006`）に実行
    （テーブル・RLS・デフォルトカテゴリ seed が投入されます）。
 3. Authentication → Providers で Email を有効化。
    - ローカル検証を手早く行いたい場合は「Confirm email」をオフにすると、
@@ -55,6 +57,8 @@ cp .env.local.example .env.local
 ```
 NEXT_PUBLIC_SUPABASE_URL=https://xxxx.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-public-key
+# レシート読み取りに使用（サーバー専用・クライアントには露出しない）。未設定でも他機能は動作します。
+ANTHROPIC_API_KEY=sk-ant-xxxx
 ```
 
 ### 4. 開発サーバー
@@ -85,7 +89,7 @@ app/
 components/          UI コンポーネント
 lib/
   supabase/          Supabase クライアント（client / server / セッション更新）
-  actions/           Server Actions（認証 / 取引 CRUD）
+  actions/           Server Actions（認証 / 取引 CRUD / レシート読み取り）
   queries.ts         サーバー側データ取得・集計
   csv.ts             CSV入出力（Money Forward互換）
   format.ts          表示・日付ユーティリティ
@@ -105,5 +109,5 @@ scripts/gen-icons.mjs PWA アイコン生成（依存なし）
 
 ## MVP に含めないもの（将来対応）
 
-目標設定、銀行/カード連携、口座振替、OCR、カテゴリ編集 UI
-（カテゴリの DB 設計は拡張対応済み）。
+目標設定、銀行/カード連携、口座振替、レシート明細の複数行取り込み
+（現状は合計1件の取り込み）。

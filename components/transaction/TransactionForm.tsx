@@ -17,22 +17,31 @@ import {
   type TransactionWithCategory,
   type TxType,
 } from "@/lib/types";
+import type { ReceiptPrefill } from "@/lib/receipt-input";
 import { Calculator } from "./Calculator";
 import { CategoryPicker } from "./CategoryPicker";
 
 type Props = {
   categories: Category[];
   initial?: TransactionWithCategory | null;
+  // レシート読み取り等による新規入力の初期値（initial が無いときのみ反映）。
+  prefill?: ReceiptPrefill | null;
   onDone: () => void;
 };
 
-export function TransactionForm({ categories, initial, onDone }: Props) {
+export function TransactionForm({ categories, initial, prefill, onDone }: Props) {
   const isEdit = !!initial;
-  const [type, setType] = useState<TxType>(initial?.type ?? "expense");
-  const [categoryId, setCategoryId] = useState<string>(
-    () => initial?.category_id ?? defaultCategoryId(categories)
+  const [type, setType] = useState<TxType>(
+    initial?.type ?? prefill?.type ?? "expense"
   );
-  const [amount, setAmount] = useState<number>(initial?.amount ?? 0);
+  const [categoryId, setCategoryId] = useState<string>(
+    () =>
+      initial?.category_id ??
+      (prefill?.category_id || defaultCategoryId(categories))
+  );
+  const [amount, setAmount] = useState<number>(
+    initial?.amount ?? prefill?.amount ?? 0
+  );
   // 新規登録時は電卓を開いた状態で開始し、すぐに数値入力できるようにする。
   const [calcOpen, setCalcOpen] = useState(!initial);
   const [catPickerOpen, setCatPickerOpen] = useState(false);
@@ -133,7 +142,7 @@ export function TransactionForm({ categories, initial, onDone }: Props) {
         type="date"
         name="date"
         required
-        defaultValue={initial?.date ?? todayDate()}
+        defaultValue={initial?.date ?? prefill?.date ?? todayDate()}
         max={todayDate()}
         className="date-field h-12 w-full min-w-0 rounded-xl border border-[var(--color-line)] bg-[var(--color-bg)] px-4 text-base outline-none focus:border-[var(--color-brand)]"
       />
@@ -143,7 +152,7 @@ export function TransactionForm({ categories, initial, onDone }: Props) {
         type="text"
         name="memo"
         maxLength={100}
-        defaultValue={initial?.memo ?? ""}
+        defaultValue={initial?.memo ?? prefill?.memo ?? ""}
         placeholder="メモ（任意）"
         className="h-12 w-full rounded-xl border border-[var(--color-line)] bg-[var(--color-bg)] px-4 outline-none focus:border-[var(--color-brand)]"
       />

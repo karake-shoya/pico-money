@@ -5,7 +5,7 @@ import { LayoutGrid, type LucideIcon } from "lucide-react";
 import { TransactionItem } from "./TransactionItem";
 import { categoryIcon } from "@/lib/category-icon";
 import { formatYen } from "@/lib/format";
-import type { TransactionWithCategory } from "@/lib/types";
+import type { TransactionWithCategory, TxType } from "@/lib/types";
 
 // その月の明細を、カテゴリ別フィルタチップ付きで表示する。
 // initialCategoryId が渡された場合はそのカテゴリで初期絞り込み（家計簿からのドリルダウン）。
@@ -21,11 +21,21 @@ export function TransactionList({
     initialCategoryId ?? null
   );
 
-  // 出現するカテゴリを集計（件数）。DB の sort_order 順に並べる。
+  // 出現するカテゴリを集計（件数）。
+  // 支出グループ→収入グループの順に、各グループ内は sort_order 順で並べる
+  // （getCategories と同じ並び。type を見ずに sort_order だけで並べると
+  //  収入・支出の sort_order がともに 1 始まりのため交互に混在してしまう）。
   const categories = useMemo(() => {
     const map = new Map<
       string,
-      { id: string; name: string; icon: string | null; count: number; sortOrder: number }
+      {
+        id: string;
+        name: string;
+        icon: string | null;
+        count: number;
+        type: TxType | null;
+        sortOrder: number;
+      }
     >();
     for (const tx of transactions) {
       const id = tx.category?.id ?? "unknown";
@@ -38,11 +48,18 @@ export function TransactionList({
           name: tx.category?.name ?? "不明",
           icon: tx.category?.icon ?? null,
           count: 1,
+          type: tx.category?.type ?? null,
           sortOrder: tx.category?.sort_order ?? 999,
         });
       }
     }
-    return [...map.values()].sort((a, b) => a.sortOrder - b.sortOrder);
+    return [...map.values()].sort((a, b) =>
+      a.type === b.type
+        ? a.sortOrder - b.sortOrder
+        : (a.type ?? "zzz") < (b.type ?? "zzz")
+          ? -1
+          : 1
+    );
   }, [transactions]);
 
   const filtered = useMemo(

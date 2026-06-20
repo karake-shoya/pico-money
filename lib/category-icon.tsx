@@ -11,6 +11,8 @@ import {
   Gamepad2,
   Gift,
   HeartPulse,
+  HelpCircle,
+  Home,
   Landmark,
   Laptop,
   Lightbulb,
@@ -39,10 +41,12 @@ const ICON_MAP: Record<string, LucideIcon> = {
   食費: Utensils,
   交通費: TrainFront,
   光熱費: Lightbulb,
+  住居費: Home,
   通信費: Smartphone,
   娯楽: Gamepad2,
   副業経費: Receipt,
   その他支出: Wallet,
+  未分類: HelpCircle,
   // 支出（取込で作成）
   日用品: ShoppingBasket,
   交際費: Beer,
@@ -68,10 +72,12 @@ const COLOR_MAP: Record<string, string> = {
   食費: "#ef4444", // red
   交通費: "#3b82f6", // blue
   光熱費: "#f97316", // orange
+  住居費: "#854d0e", // amber-800（住居・木のトーン）
   通信費: "#06b6d4", // cyan
   娯楽: "#ec4899", // pink
   副業経費: "#64748b", // slate
   その他支出: "#9ca3af", // gray
+  未分類: "#6b7280", // gray-500
   日用品: "#22c55e", // green
   交際費: "#8b5cf6", // violet
   "衣服・美容": "#f59e0b", // amber
