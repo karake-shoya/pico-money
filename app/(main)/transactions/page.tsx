@@ -1,3 +1,5 @@
+import Link from "next/link";
+import { Search } from "lucide-react";
 import { CsvButtons } from "@/components/transaction/CsvButtons";
 import { MonthNav } from "@/components/MonthNav";
 import { TransactionList } from "@/components/transaction/TransactionList";
@@ -23,6 +25,13 @@ export default async function TransactionsPage({
       <div className="flex items-center justify-between">
         <MonthNav />
         <div className="flex items-center gap-2">
+          <Link
+            href="/search"
+            aria-label="取引を検索"
+            className="flex h-9 w-9 items-center justify-center rounded-lg text-[var(--color-muted)] active:bg-[var(--color-bg)]"
+          >
+            <Search className="h-[18px] w-[18px]" strokeWidth={1.8} />
+          </Link>
           <CsvButtons transactions={transactions} month={month} categories={categories} />
           <p className="text-sm text-[var(--color-muted)]">
             {transactions.length}件
