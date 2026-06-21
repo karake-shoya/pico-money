@@ -52,6 +52,18 @@ export type TransactionWithCategory = Transaction & {
   category: Pick<Category, 'id' | 'name' | 'icon' | 'type' | 'sort_order'> | null;
 };
 
+// 取引の横断検索フィルタ（月に縛られない全期間検索）。
+// すべて任意。指定されたものだけを AND 条件で適用する。
+export type TransactionSearchFilters = {
+  keyword?: string; // memo を部分一致（大文字小文字無視）
+  type?: TxType; // income / expense
+  categoryId?: string;
+  dateFrom?: string; // YYYY-MM-DD（その日を含む）
+  dateTo?: string; // YYYY-MM-DD（その日を含む）
+  amountMin?: number; // 円・整数
+  amountMax?: number; // 円・整数
+};
+
 // push_subscriptions テーブル（Web Push の購読・記録忘れリマインダー用）
 export type PushSubscriptionRow = {
   id: string;

@@ -18,6 +18,7 @@ import type {
   MonthlySummary,
   PushSubscriptionRow,
   RecurringWithCategory,
+  TransactionSearchFilters,
   TransactionWithCategory,
   TxType,
 } from '@/lib/types';
@@ -82,6 +83,37 @@ export async function getTransactionsForMonth(
     .lt('date', end)
     .order('date', { ascending: false })
     .order('created_at', { ascending: false });
+  if (error) throw error;
+  return (data ?? []) as unknown as TransactionWithCategory[];
+}
+
+// 取引の横断検索（月に縛られない全期間）。指定されたフィルタのみ AND で適用。
+// RLS により本人分のみが対象。安全のため最大 500 件に制限する。
+export async function searchTransactions(
+  filters: TransactionSearchFilters
+): Promise<TransactionWithCategory[]> {
+  const supabase = await createClient();
+  let query = supabase
+    .from('transactions')
+    .select('*, category:categories(id, name, icon, type, sort_order)');
+
+  const keyword = filters.keyword?.trim();
+  if (keyword) {
+    // % と _ は LIKE のワイルドカードなのでエスケープしてから部分一致。
+    const escaped = keyword.replace(/[\\%_]/g, (c) => `\\${c}`);
+    query = query.ilike('memo', `%${escaped}%`);
+  }
+  if (filters.type) query = query.eq('type', filters.type);
+  if (filters.categoryId) query = query.eq('category_id', filters.categoryId);
+  if (filters.dateFrom) query = query.gte('date', filters.dateFrom);
+  if (filters.dateTo) query = query.lte('date', filters.dateTo);
+  if (filters.amountMin != null) query = query.gte('amount', filters.amountMin);
+  if (filters.amountMax != null) query = query.lte('amount', filters.amountMax);
+
+  const { data, error } = await query
+    .order('date', { ascending: false })
+    .order('created_at', { ascending: false })
+    .limit(500);
   if (error) throw error;
   return (data ?? []) as unknown as TransactionWithCategory[];
 }
