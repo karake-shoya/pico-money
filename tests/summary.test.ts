@@ -20,14 +20,31 @@ describe("summarize", () => {
     expect(result).toEqual({
       income: 350000,
       expense: 140000,
+      savings: 0,
       balance: 210000,
       savingsRate: 60, // 210000 / 350000 = 60%
+    });
+  });
+  it("貯金（isSavings）は消費支出に含めず残高だけ減らし、貯蓄率は下げない", () => {
+    const r = summarize([
+      { type: "income", amount: 300000 },
+      { type: "expense", amount: 100000 },
+      { type: "expense", amount: 50000, isSavings: true }, // 目標への貯金
+    ]);
+    expect(r).toEqual({
+      income: 300000,
+      expense: 100000, // 貯金は含まない
+      savings: 50000,
+      balance: 150000, // 300000 - 100000 - 50000（貯金で残高は減る）
+      // 貯蓄率 = (300000 - 100000) / 300000 = 66.67 → 67（貯金しても下がらない）
+      savingsRate: 67,
     });
   });
   it("収入0なら貯蓄率は0", () => {
     expect(summarize([{ type: "expense", amount: 1000 }])).toEqual({
       income: 0,
       expense: 1000,
+      savings: 0,
       balance: -1000,
       savingsRate: 0,
     });
@@ -44,6 +61,7 @@ describe("summarize", () => {
     expect(summarize([])).toEqual({
       income: 0,
       expense: 0,
+      savings: 0,
       balance: 0,
       savingsRate: 0,
     });
@@ -56,11 +74,13 @@ describe("aggregateMonthlySummaries", () => {
     const rows: DatedRow[] = [
       { date: "2026-05-10", type: "income", amount: 1000 },
       { date: "2026-05-20", type: "expense", amount: 400 },
+      { date: "2026-05-25", type: "expense", amount: 200, isSavings: true }, // 貯金
       { date: "2026-06-01", type: "expense", amount: 700 },
     ];
     expect(aggregateMonthlySummaries(rows, months)).toEqual({
-      "2026-05": { income: 1000, expense: 400, balance: 600, savingsRate: 60 },
-      "2026-06": { income: 0, expense: 700, balance: -700, savingsRate: 0 },
+      // 5月: 収入1000・消費400・貯金200 → 残高400、貯蓄率=(1000-400)/1000=60%
+      "2026-05": { income: 1000, expense: 400, savings: 200, balance: 400, savingsRate: 60 },
+      "2026-06": { income: 0, expense: 700, savings: 0, balance: -700, savingsRate: 0 },
     });
   });
   it("対象月リスト外の行は無視し、データの無い月は0で埋める", () => {
@@ -68,8 +88,8 @@ describe("aggregateMonthlySummaries", () => {
       { date: "2026-04-30", type: "income", amount: 9999 },
     ];
     expect(aggregateMonthlySummaries(rows, months)).toEqual({
-      "2026-05": { income: 0, expense: 0, balance: 0, savingsRate: 0 },
-      "2026-06": { income: 0, expense: 0, balance: 0, savingsRate: 0 },
+      "2026-05": { income: 0, expense: 0, savings: 0, balance: 0, savingsRate: 0 },
+      "2026-06": { income: 0, expense: 0, savings: 0, balance: 0, savingsRate: 0 },
     });
   });
 });
@@ -130,13 +150,15 @@ describe("buildMonthlyReport", () => {
   const current: MonthlySummary = {
     income: 300000,
     expense: 200000,
-    balance: 100000,
+    savings: 20000,
+    balance: 80000,
     savingsRate: 33,
   };
   const previous: MonthlySummary = {
     income: 280000,
     expense: 230000,
-    balance: 50000,
+    savings: 10000,
+    balance: 40000,
     savingsRate: 18,
   };
   // 当月の支出カテゴリ内訳（sort_order 順で渡される想定）
@@ -153,7 +175,8 @@ describe("buildMonthlyReport", () => {
     expect(r.deltas).toEqual({
       income: 20000, // 300000 - 280000
       expense: -30000, // 200000 - 230000（支出減）
-      balance: 50000, // 100000 - 50000
+      savings: 10000, // 20000 - 10000
+      balance: 40000, // 80000 - 40000
       savingsRate: 15, // 33 - 18
     });
   });

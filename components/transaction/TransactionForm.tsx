@@ -21,23 +21,40 @@ import type { ReceiptPrefill } from "@/lib/receipt-input";
 import { Calculator } from "./Calculator";
 import { CategoryPicker } from "./CategoryPicker";
 
+// 目標への貯金モードのコンテキスト（指定時は支出＝「貯金」カテゴリ固定で記録する）。
+export type GoalContext = { goalId: string; goalName: string };
+
 type Props = {
   categories: Category[];
   initial?: TransactionWithCategory | null;
   // レシート読み取り等による新規入力の初期値（initial が無いときのみ反映）。
   prefill?: ReceiptPrefill | null;
+  // 指定時は「貯金モード」：種別=支出・カテゴリ=貯金 固定で goal_id を紐付ける。
+  goalContext?: GoalContext | null;
   onDone: () => void;
 };
 
-export function TransactionForm({ categories, initial, prefill, onDone }: Props) {
+export function TransactionForm({
+  categories,
+  initial,
+  prefill,
+  goalContext,
+  onDone,
+}: Props) {
   const isEdit = !!initial;
-  const [type, setType] = useState<TxType>(
-    initial?.type ?? prefill?.type ?? "expense"
+  const isSavingsMode = !!goalContext;
+  // 「貯金」専用カテゴリ（goal 貯金の受け皿）。
+  const savingsCategory = useMemo(
+    () => categories.find((c) => c.type === "expense" && c.name === "貯金") ?? null,
+    [categories]
   );
-  const [categoryId, setCategoryId] = useState<string>(
-    () =>
-      initial?.category_id ??
-      (prefill?.category_id || defaultCategoryId(categories))
+  const [type, setType] = useState<TxType>(
+    isSavingsMode ? "expense" : initial?.type ?? prefill?.type ?? "expense"
+  );
+  const [categoryId, setCategoryId] = useState<string>(() =>
+    isSavingsMode
+      ? savingsCategory?.id ?? ""
+      : initial?.category_id ?? (prefill?.category_id || defaultCategoryId(categories))
   );
   const [amount, setAmount] = useState<number>(
     initial?.amount ?? prefill?.amount ?? 0
@@ -46,10 +63,14 @@ export function TransactionForm({ categories, initial, prefill, onDone }: Props)
   const [calcOpen, setCalcOpen] = useState(!initial);
   const [catPickerOpen, setCatPickerOpen] = useState(false);
 
-  // 選択中の type に応じてカテゴリを絞り込み
+  // 選択中の type に応じてカテゴリを絞り込み。通常入力では「貯金」カテゴリは隠す
+  // （貯金は目標カードの「貯金する」導線からのみ登録する）。
   const visible = useMemo(
-    () => categories.filter((c) => c.type === type),
-    [categories, type]
+    () =>
+      categories.filter(
+        (c) => c.type === type && c.id !== savingsCategory?.id
+      ),
+    [categories, type, savingsCategory]
   );
 
   const action = isEdit
@@ -88,9 +109,21 @@ export function TransactionForm({ categories, initial, prefill, onDone }: Props)
           calcOpen ? "pb-[320px]" : "pb-5"
         }`}
       >
-      {/* 収入/支出タブ（タップで切替） */}
+      {/* 収入/支出タブ（タップで切替）。貯金モードでは支出固定のため非表示。 */}
       <input type="hidden" name="type" value={type} />
-      <TypeTabs value={type} onChange={changeType} bordered />
+      {/* 貯金モードは goal_id を紐付け、専用「貯金」カテゴリで記録する。 */}
+      {isSavingsMode && <input type="hidden" name="goal_id" value={goalContext!.goalId} />}
+      {isSavingsMode ? (
+        <div className="flex items-center gap-3 rounded-xl border border-[var(--color-line)] bg-[var(--color-bg)] px-3 py-2.5">
+          <CategoryBadge name="貯金" className="h-8 w-8" iconClassName="h-[18px] w-[18px]" />
+          <div className="min-w-0">
+            <div className="text-xs text-[var(--color-muted)]">貯金する目標</div>
+            <div className="truncate font-semibold">{goalContext!.goalName}</div>
+          </div>
+        </div>
+      ) : (
+        <TypeTabs value={type} onChange={changeType} bordered />
+      )}
 
       {/* 金額（タップで電卓を開閉。電卓の入力がここに即時反映される） */}
       <input type="hidden" name="amount" value={amount > 0 ? amount : ""} />
@@ -111,31 +144,33 @@ export function TransactionForm({ categories, initial, prefill, onDone }: Props)
         </span>
       </button>
 
-      {/* カテゴリ（アイコン付きのピッカーで選択） */}
+      {/* カテゴリ（アイコン付きのピッカーで選択）。貯金モードは「貯金」固定のため非表示。 */}
       <input type="hidden" name="category_id" value={categoryId} />
-      <button
-        type="button"
-        onClick={() => setCatPickerOpen(true)}
-        className="flex h-12 w-full items-center gap-3 rounded-xl border border-[var(--color-line)] bg-[var(--color-bg)] px-3 text-left transition active:scale-[0.99] focus:border-[var(--color-brand)]"
-      >
-        {selectedCat ? (
-          <>
-            <CategoryBadge
-              name={selectedCat.name}
-              className="h-8 w-8"
-              iconClassName="h-[18px] w-[18px]"
-            />
-            <span className="flex-1 truncate font-medium">
-              {selectedCat.name}
+      {!isSavingsMode && (
+        <button
+          type="button"
+          onClick={() => setCatPickerOpen(true)}
+          className="flex h-12 w-full items-center gap-3 rounded-xl border border-[var(--color-line)] bg-[var(--color-bg)] px-3 text-left transition active:scale-[0.99] focus:border-[var(--color-brand)]"
+        >
+          {selectedCat ? (
+            <>
+              <CategoryBadge
+                name={selectedCat.name}
+                className="h-8 w-8"
+                iconClassName="h-[18px] w-[18px]"
+              />
+              <span className="flex-1 truncate font-medium">
+                {selectedCat.name}
+              </span>
+            </>
+          ) : (
+            <span className="flex-1 text-[var(--color-muted)]">
+              カテゴリを選択
             </span>
-          </>
-        ) : (
-          <span className="flex-1 text-[var(--color-muted)]">
-            カテゴリを選択
-          </span>
-        )}
-        <ChevronDown className="h-5 w-5 shrink-0 text-[var(--color-muted)]" />
-      </button>
+          )}
+          <ChevronDown className="h-5 w-5 shrink-0 text-[var(--color-muted)]" />
+        </button>
+      )}
 
       {/* 日付 */}
       <input
@@ -152,7 +187,11 @@ export function TransactionForm({ categories, initial, prefill, onDone }: Props)
         type="text"
         name="memo"
         maxLength={100}
-        defaultValue={initial?.memo ?? prefill?.memo ?? ""}
+        defaultValue={
+          initial?.memo ??
+          prefill?.memo ??
+          (isSavingsMode ? goalContext!.goalName : "")
+        }
         placeholder="メモ（任意）"
         className="h-12 w-full rounded-xl border border-[var(--color-line)] bg-[var(--color-bg)] px-4 outline-none focus:border-[var(--color-brand)]"
       />

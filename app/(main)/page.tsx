@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ChevronRight, LineChart } from "lucide-react";
+import { ChevronRight, LineChart, PiggyBank } from "lucide-react";
 import { HomeCarousel } from "@/components/HomeCarousel";
 import { getMonthlySummaries } from "@/lib/queries";
 import { currentMonth, lastNMonths, shiftMonth } from "@/lib/format";
@@ -36,6 +36,23 @@ export default async function HomePage() {
           <div className="text-sm font-bold">振り返りを見る</div>
           <div className="text-xs text-[var(--color-muted)]">
             週次・月次の収支、前期比、予算超過をまとめて確認
+          </div>
+        </div>
+        <ChevronRight className="h-4 w-4 shrink-0 text-[var(--color-muted)]" />
+      </Link>
+
+      {/* 目標貯金への常設導線 */}
+      <Link
+        href="/goals"
+        className="flex items-center gap-3 rounded-[var(--radius-card)] border border-[var(--color-line)] bg-[var(--color-surface)] p-4 active:bg-[var(--color-bg)]"
+      >
+        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[var(--color-brand-soft)]">
+          <PiggyBank className="h-5 w-5 text-[var(--color-brand)]" />
+        </span>
+        <div className="min-w-0 flex-1">
+          <div className="text-sm font-bold">目標貯金</div>
+          <div className="text-xs text-[var(--color-muted)]">
+            目標を決めて、支出として貯金。進捗をチェック
           </div>
         </div>
         <ChevronRight className="h-4 w-4 shrink-0 text-[var(--color-muted)]" />

@@ -16,6 +16,7 @@ import {
   Landmark,
   Laptop,
   Lightbulb,
+  PiggyBank,
   Receipt,
   ShieldCheck,
   Shirt,
@@ -57,6 +58,7 @@ const ICON_MAP: Record<string, LucideIcon> = {
   "現金・カード": CreditCard,
   税金: Landmark,
   保険: ShieldCheck,
+  貯金: PiggyBank,
 };
 
 // カテゴリ名 → 表示色（塗りつぶしバッジ／円グラフで共有）。
@@ -87,6 +89,7 @@ const COLOR_MAP: Record<string, string> = {
   "現金・カード": "#0891b2", // cyan-600
   税金: "#a16207", // amber-700
   保険: "#0d9488", // teal-600
+  貯金: "#16a34a", // green-600（貯まる＝ポジティブな緑）
 };
 
 // 未登録カテゴリ用のフォールバック・パレット（名前ハッシュで安定的に割り当てる）。

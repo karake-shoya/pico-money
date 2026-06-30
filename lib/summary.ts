@@ -7,24 +7,36 @@ import type {
   TxType,
 } from "@/lib/types";
 
-// 集計入力の最小形（金額と種別）
-export type AmountRow = { type: TxType; amount: number };
+// 集計入力の最小形（金額と種別）。
+// isSavings=true の支出は「目標への貯金（振替）」として消費から分離する。
+export type AmountRow = { type: TxType; amount: number; isSavings?: boolean };
 
-// 月次サマリー（収入 / 支出 / 収支 / 貯蓄率）
+// 月次サマリー（収入 / 消費支出 / 貯金 / 残高 / 貯蓄率）。
+// 貯金（goal_id 付き支出）は消費 expense に含めず savings として別建てし、
+// 残高 balance は貯金分も差し引く（使えるお金）。
+// 貯蓄率は (income - expense) / income とし、貯金しても下がらないようにする。
 export function summarize(rows: AmountRow[]): MonthlySummary {
   let income = 0;
   let expense = 0;
+  let savings = 0;
   for (const r of rows) {
     if (r.type === "income") income += r.amount;
+    else if (r.isSavings) savings += r.amount;
     else expense += r.amount;
   }
-  const balance = income - expense;
-  const savingsRate = income > 0 ? Math.round((balance / income) * 100) : 0;
-  return { income, expense, balance, savingsRate };
+  const balance = income - expense - savings;
+  const savingsRate =
+    income > 0 ? Math.round(((income - expense) / income) * 100) : 0;
+  return { income, expense, savings, balance, savingsRate };
 }
 
 // 日付付きの集計入力
-export type DatedRow = { date: string; type: TxType; amount: number };
+export type DatedRow = {
+  date: string;
+  type: TxType;
+  amount: number;
+  isSavings?: boolean;
+};
 
 // 指定月リストそれぞれの月次サマリーを算出（範囲外の行は無視）。
 // カルーセルの先読み用：複数月をまとめてクライアントへ渡す。
@@ -36,7 +48,7 @@ export function aggregateMonthlySummaries(
   for (const m of months) buckets.set(m, []);
   for (const r of rows) {
     const bucket = buckets.get(r.date.slice(0, 7));
-    if (bucket) bucket.push({ type: r.type, amount: r.amount });
+    if (bucket) bucket.push({ type: r.type, amount: r.amount, isSavings: r.isSavings });
   }
   const result: Record<string, MonthlySummary> = {};
   for (const m of months) result[m] = summarize(buckets.get(m)!);
@@ -140,6 +152,7 @@ export function buildMonthlyReport(
     deltas: {
       income: current.income - previous.income,
       expense: current.expense - previous.expense,
+      savings: current.savings - previous.savings,
       balance: current.balance - previous.balance,
       savingsRate: current.savingsRate - previous.savingsRate,
     },

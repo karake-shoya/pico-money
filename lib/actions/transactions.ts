@@ -16,6 +16,7 @@ function parse(formData: FormData) {
     category_id: String(formData.get('category_id') ?? ''),
     amount: String(formData.get('amount') ?? ''),
     memo: String(formData.get('memo') ?? ''),
+    goal_id: String(formData.get('goal_id') ?? ''),
   });
 }
 
