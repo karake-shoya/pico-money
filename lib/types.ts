@@ -24,7 +24,27 @@ export type Transaction = {
   amount: number; // 整数（円）
   memo: string | null;
   recurring_id: string | null;
+  goal_id: string | null; // NULL = 通常の取引 / 値あり = 目標への貯金（振替）
   created_at: string;
+};
+
+// savings_goals テーブル（貯金の目標）
+export type SavingsGoal = {
+  id: string;
+  user_id: string;
+  name: string;
+  target_amount: number; // 整数（円）・正
+  deadline: string | null; // YYYY-MM-DD・任意
+  sort_order: number;
+  created_at: string;
+  updated_at: string;
+};
+
+// 進捗付きの目標（貯金済み額を結合したもの）
+export type SavingsGoalWithProgress = SavingsGoal & {
+  saved: number; // これまでの貯金合計（円）
+  remaining: number; // 残り（target - saved、最低0）
+  percent: number; // 達成率（0-100、四捨五入）
 };
 
 // recurring_transactions テーブル（固定費テンプレート）
@@ -93,9 +113,10 @@ export type Budget = {
 // 月次サマリー
 export type MonthlySummary = {
   income: number;
-  expense: number;
-  balance: number; // income - expense
-  savingsRate: number; // 貯蓄率（収入に対する収支の割合, %）。収入0なら0。
+  expense: number; // 消費支出のみ（目標への貯金=goal_id 付きは含まない）
+  savings: number; // 目標への貯金（振替）合計
+  balance: number; // 残高（使えるお金）= income - expense - savings
+  savingsRate: number; // 貯蓄率 = (income - expense) / income（貯金しても下がらない）。収入0なら0。
 };
 
 // カテゴリ別内訳（円グラフ用）
@@ -125,6 +146,7 @@ export type MonthlyReport = {
   deltas: {
     income: number;
     expense: number;
+    savings: number;
     balance: number;
     savingsRate: number;
   };

@@ -12,19 +12,25 @@ import {
 import { useRouter } from "next/navigation";
 import { Camera, Loader2, Plus, Trash2 } from "lucide-react";
 import { BottomSheet } from "@/components/BottomSheet";
-import { TransactionForm } from "./TransactionForm";
+import { TransactionForm, type GoalContext } from "./TransactionForm";
 import { ReceiptCamera } from "./ReceiptCamera";
 import { deleteTransaction } from "@/lib/actions/transactions";
 import { scanReceipt } from "@/lib/actions/receipt";
 import { resizeImageToBase64 } from "@/lib/image-resize";
 import type { ReceiptPrefill } from "@/lib/receipt-input";
-import type { Category, TransactionWithCategory } from "@/lib/types";
+import type {
+  Category,
+  SavingsGoalWithProgress,
+  TransactionWithCategory,
+} from "@/lib/types";
 
 type ModalContextValue = {
   // 新規登録モーダルを開く
   openNew: () => void;
   // 編集モーダルを開く
   openEdit: (tx: TransactionWithCategory) => void;
+  // 目標への貯金（支出）モーダルを開く
+  openContribute: (goal: { id: string; name: string }) => void;
 };
 
 const ModalContext = createContext<ModalContextValue | null>(null);
@@ -39,9 +45,11 @@ export function useTransactionModal() {
 // アプリ全体に取引モーダルと FAB を提供する。
 export function TransactionModalProvider({
   categories,
+  goals = [],
   children,
 }: {
   categories: Category[];
+  goals?: SavingsGoalWithProgress[];
   children: ReactNode;
 }) {
   const router = useRouter();
@@ -49,6 +57,8 @@ export function TransactionModalProvider({
   const [editing, setEditing] = useState<TransactionWithCategory | null>(null);
   // レシート読み取りによる新規入力の初期値。
   const [prefill, setPrefill] = useState<ReceiptPrefill | null>(null);
+  // 目標への貯金モード（指定時は支出=貯金 固定で goal_id を紐付ける）。
+  const [goalContext, setGoalContext] = useState<GoalContext | null>(null);
   // フォームを再マウントして初期 state を seed し直すためのキー。
   const [formKey, setFormKey] = useState(0);
   // 読み取り中のオーバーレイ表示。
@@ -62,17 +72,38 @@ export function TransactionModalProvider({
   const openNew = useCallback(() => {
     setEditing(null);
     setPrefill(null);
+    setGoalContext(null);
     setScanNote(null);
     setFormKey((k) => k + 1);
     setOpen(true);
   }, []);
-  const openEdit = useCallback((tx: TransactionWithCategory) => {
-    setEditing(tx);
-    setPrefill(null);
-    setScanNote(null);
-    setFormKey((k) => k + 1);
-    setOpen(true);
-  }, []);
+  const openEdit = useCallback(
+    (tx: TransactionWithCategory) => {
+      setEditing(tx);
+      setPrefill(null);
+      // 貯金取引（goal_id 付き）の編集も貯金モードで開き、goal_id を保持する。
+      const goal = tx.goal_id ? goals.find((g) => g.id === tx.goal_id) : null;
+      setGoalContext(
+        tx.goal_id ? { goalId: tx.goal_id, goalName: goal?.name ?? "貯金" } : null
+      );
+      setScanNote(null);
+      setFormKey((k) => k + 1);
+      setOpen(true);
+    },
+    [goals]
+  );
+  // 目標への貯金（支出）モーダルを開く。
+  const openContribute = useCallback(
+    (goal: { id: string; name: string }) => {
+      setEditing(null);
+      setPrefill(null);
+      setGoalContext({ goalId: goal.id, goalName: goal.name });
+      setScanNote(null);
+      setFormKey((k) => k + 1);
+      setOpen(true);
+    },
+    []
+  );
   const close = useCallback(() => setOpen(false), []);
 
   // レシート読み取りを開始する。アプリ内カメラ（無音）が使えればそれを開き、
@@ -89,6 +120,7 @@ export function TransactionModalProvider({
   function openEmptyFormWithNote(note: string) {
     setEditing(null);
     setPrefill(null);
+    setGoalContext(null);
     setFormKey((k) => k + 1);
     setScanNote(note);
     setOpen(true);
@@ -102,6 +134,7 @@ export function TransactionModalProvider({
       const result = await scanReceipt(base64, mediaType);
       if (result.ok) {
         setEditing(null);
+        setGoalContext(null);
         setFormKey((k) => k + 1);
         setPrefill(result.prefill);
         setScanNote(null);
@@ -147,7 +180,7 @@ export function TransactionModalProvider({
   }
 
   return (
-    <ModalContext.Provider value={{ openNew, openEdit }}>
+    <ModalContext.Provider value={{ openNew, openEdit, openContribute }}>
       {children}
 
       {/* アルバム選択・カメラ非対応時のフォールバック用の隠し input。
@@ -206,7 +239,7 @@ export function TransactionModalProvider({
           onClose={close}
           height="94dvh"
           fixedHeight
-          title={editing ? "編集" : "入力"}
+          title={editing ? "編集" : goalContext ? "貯金する" : "入力"}
           headerLeft={
             editing ? (
               <button
@@ -218,7 +251,7 @@ export function TransactionModalProvider({
               >
                 <Trash2 className="h-5 w-5" />
               </button>
-            ) : (
+            ) : goalContext ? undefined : (
               // 新規入力時はレシート読み取りの導線（左上カメラ）。
               <button
                 type="button"
@@ -241,6 +274,7 @@ export function TransactionModalProvider({
             categories={categories}
             initial={editing}
             prefill={prefill}
+            goalContext={goalContext}
             onDone={handleDone}
           />
         </BottomSheet>

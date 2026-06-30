@@ -60,23 +60,29 @@ async function buildBody(
   // 取引（収支とカテゴリ別支出）
   const { data: txs, error: txErr } = await admin
     .from("transactions")
-    .select("type, amount, category:categories(id, name)")
+    .select("type, amount, goal_id, category:categories(id, name)")
     .eq("user_id", userId)
     .gte("date", start)
     .lt("date", end);
   if (txErr) throw txErr;
   if (!txs || txs.length === 0) return null; // 取引が無い月は送らない
 
+  // 目標への貯金（goal_id 付き支出）は「振替」としてアプリ側と同様に消費から分離する。
+  // 残高は減らすが、支出総額・貯蓄率・カテゴリ別内訳には含めない。
   let income = 0;
   let expense = 0;
+  let savings = 0;
   const expenseByCat = new Map<string, { name: string; amount: number }>();
   for (const t of txs as unknown as {
     type: string;
     amount: number;
+    goal_id: string | null;
     category: { id: string; name: string } | null;
   }[]) {
     if (t.type === "income") {
       income += t.amount;
+    } else if (t.goal_id) {
+      savings += t.amount;
     } else {
       expense += t.amount;
       const id = t.category?.id ?? "unknown";
@@ -85,8 +91,8 @@ async function buildBody(
       else expenseByCat.set(id, { name: t.category?.name ?? "不明", amount: t.amount });
     }
   }
-  const balance = income - expense;
-  const savingsRate = income > 0 ? Math.round((balance / income) * 100) : 0;
+  const balance = income - expense - savings;
+  const savingsRate = income > 0 ? Math.round(((income - expense) / income) * 100) : 0;
 
   // 予算超過カテゴリ（最大の1件をメッセージに含める）
   const { data: budgets, error: bErr } = await admin

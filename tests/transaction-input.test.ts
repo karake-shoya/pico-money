@@ -24,6 +24,7 @@ describe("parseTransactionInput", () => {
         category_id: "cat-1",
         amount: 1200,
         memo: "ランチ",
+        goal_id: null,
       },
     });
   });
@@ -31,6 +32,13 @@ describe("parseTransactionInput", () => {
   it("メモ未入力は null になる", () => {
     const r = parseTransactionInput({ ...base, memo: "   " });
     expect(r.ok && r.value.memo).toBeNull();
+  });
+
+  it("goal_id 未指定/空文字は null、指定時はその値を保持する", () => {
+    expect(parseTransactionInput(base).ok && parseTransactionInput(base).value.goal_id).toBeNull();
+    expect(parseTransactionInput({ ...base, goal_id: "  " }).ok && parseTransactionInput({ ...base, goal_id: "  " }).value.goal_id).toBeNull();
+    const r = parseTransactionInput({ ...base, goal_id: "goal-99" });
+    expect(r.ok && r.value.goal_id).toBe("goal-99");
   });
 
   it("type が不正なら拒否", () => {

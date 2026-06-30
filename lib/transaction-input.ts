@@ -8,6 +8,7 @@ export type RawTxInput = {
   category_id: string;
   amount: string;
   memo: string;
+  goal_id?: string; // 目標への貯金時のみ。空文字/未指定は通常の取引。
 };
 
 // 検証済みの取引入力
@@ -17,6 +18,7 @@ export type ParsedTxInput = {
   category_id: string;
   amount: number;
   memo: string | null;
+  goal_id: string | null;
 };
 
 export type ParseResult =
@@ -30,6 +32,7 @@ export function parseTransactionInput(raw: RawTxInput): ParseResult {
   const category_id = raw.category_id;
   const amountRaw = raw.amount;
   const memo = raw.memo.trim();
+  const goal_id = raw.goal_id?.trim() ? raw.goal_id.trim() : null;
 
   if (type !== "income" && type !== "expense") {
     return { ok: false, error: "収入/支出の区分が不正です。" };
@@ -50,6 +53,13 @@ export function parseTransactionInput(raw: RawTxInput): ParseResult {
 
   return {
     ok: true,
-    value: { type, date, category_id, amount, memo: memo === "" ? null : memo },
+    value: {
+      type,
+      date,
+      category_id,
+      amount,
+      memo: memo === "" ? null : memo,
+      goal_id,
+    },
   };
 }

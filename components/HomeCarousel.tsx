@@ -12,7 +12,13 @@ import {
 } from "@/lib/format";
 import type { MonthlySummary } from "@/lib/types";
 
-const EMPTY: MonthlySummary = { income: 0, expense: 0, balance: 0, savingsRate: 0 };
+const EMPTY: MonthlySummary = {
+  income: 0,
+  expense: 0,
+  savings: 0,
+  balance: 0,
+  savingsRate: 0,
+};
 
 // 1ヶ月分の収支サマリーカード（差額・支出率ゲージ・収入/支出・貯蓄率）。
 // off-screen の前後カードがドラッグ中に再描画されないよう memo 化する。
@@ -21,7 +27,7 @@ const SummaryCard = memo(function SummaryCard({
 }: {
   summary: MonthlySummary;
 }) {
-  const { income, expense, balance, savingsRate } = summary;
+  const { income, expense, savings, balance, savingsRate } = summary;
   const expenseRate =
     income > 0
       ? Math.min(Math.round((expense / income) * 100), 999)
@@ -103,6 +109,19 @@ const SummaryCard = memo(function SummaryCard({
           {savingsRate}%
         </p>
       </section>
+
+      {/* 目標への貯金（振替）。残高には反映済みだが支出・貯蓄率には含めない。 */}
+      {savings > 0 && (
+        <section className="flex items-center justify-between rounded-[var(--radius-card)] border border-[var(--color-line)] bg-[var(--color-surface)] p-4">
+          <p className="flex items-center gap-1.5 text-sm text-[var(--color-muted)]">
+            <PiggyBank className="h-4 w-4 text-[var(--color-brand)]" />
+            目標へ貯金
+          </p>
+          <p className="tabular text-xl font-bold text-[var(--color-brand)]">
+            {formatYen(savings)}
+          </p>
+        </section>
+      )}
     </div>
   );
 });

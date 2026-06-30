@@ -18,6 +18,8 @@ import type {
   MonthlySummary,
   PushSubscriptionRow,
   RecurringWithCategory,
+  SavingsGoal,
+  SavingsGoalWithProgress,
   TransactionSearchFilters,
   TransactionWithCategory,
   TxType,
@@ -68,6 +70,46 @@ export async function getBudgets(): Promise<Budget[]> {
   const { data, error } = await supabase.from('budgets').select('*');
   if (error) throw error;
   return (data ?? []) as Budget[];
+}
+
+// 貯金目標の一覧（進捗付き）。各目標の貯金済み額は goal_id 付き取引の合計。
+// sort_order → 作成日時の順で返す。
+export async function getSavingsGoals(): Promise<SavingsGoalWithProgress[]> {
+  const supabase = await createClient();
+  const [goalsRes, txRes] = await Promise.all([
+    supabase
+      .from('savings_goals')
+      .select('*')
+      .order('sort_order', { ascending: true })
+      .order('created_at', { ascending: true }),
+    // 貯金は必ず type='expense' で記録される。集計系（消費分離）と判定基準を揃え、
+    // 万一 income に goal_id が紐づいても進捗へ混入しないよう type で絞る。
+    supabase
+      .from('transactions')
+      .select('goal_id, amount')
+      .eq('type', 'expense')
+      .not('goal_id', 'is', null),
+  ]);
+  if (goalsRes.error) throw goalsRes.error;
+  if (txRes.error) throw txRes.error;
+
+  // goal_id → 貯金済み合計
+  const savedByGoal = new Map<string, number>();
+  for (const t of txRes.data ?? []) {
+    if (!t.goal_id) continue;
+    savedByGoal.set(t.goal_id, (savedByGoal.get(t.goal_id) ?? 0) + t.amount);
+  }
+
+  const goals = (goalsRes.data ?? []) as SavingsGoal[];
+  return goals.map((g) => {
+    const saved = savedByGoal.get(g.id) ?? 0;
+    const remaining = Math.max(0, g.target_amount - saved);
+    const percent =
+      g.target_amount > 0
+        ? Math.min(100, Math.round((saved / g.target_amount) * 100))
+        : 0;
+    return { ...g, saved, remaining, percent };
+  });
 }
 
 // 指定月の取引（日付降順）。カテゴリ情報を結合。
@@ -126,11 +168,18 @@ async function summaryForRange(
   const supabase = await createClient();
   const { data, error } = await supabase
     .from('transactions')
-    .select('type, amount')
+    .select('type, amount, goal_id')
     .gte('date', start)
     .lt('date', end);
   if (error) throw error;
-  return summarize(data ?? []);
+  // goal_id 付きの支出は「貯金（振替）」として消費から分離する。
+  return summarize(
+    (data ?? []).map((r) => ({
+      type: r.type,
+      amount: r.amount,
+      isSavings: r.goal_id != null,
+    }))
+  );
 }
 
 // 月次サマリー（収入 / 支出 / 収支 / 貯蓄率）
@@ -148,11 +197,17 @@ async function fetchDatedRows(months: string[]) {
   const { end } = monthRange(months[months.length - 1]);
   const { data, error } = await supabase
     .from('transactions')
-    .select('date, type, amount')
+    .select('date, type, amount, goal_id')
     .gte('date', start)
     .lt('date', end);
   if (error) throw error;
-  return data ?? [];
+  // goal_id 付きの支出は「貯金（振替）」として消費から分離する。
+  return (data ?? []).map((r) => ({
+    date: r.date,
+    type: r.type,
+    amount: r.amount,
+    isSavings: r.goal_id != null,
+  }));
 }
 
 // 指定月リストそれぞれの月次サマリーをまとめて取得。ホームのカルーセル先読み用。
@@ -200,6 +255,7 @@ async function categoryBreakdownForRange(
     .from('transactions')
     .select('amount, category:categories(id, name, icon, sort_order)')
     .eq('type', type)
+    .is('goal_id', null) // 貯金（振替）は消費の内訳から除外する
     .gte('date', start)
     .lt('date', end);
   if (error) throw error;
