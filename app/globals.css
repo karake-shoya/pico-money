@@ -48,15 +48,37 @@ body {
   -webkit-tap-highlight-color: transparent;
 }
 
-/* 日付入力: WebKit で値が小さく上寄せになるのを防ぎ、欄の中で縦中央・等倍に揃える */
+/* 日付入力: WebKit で値が小さく上寄せになるのを防ぎ、欄の中で縦中央・等倍に揃える。
+   併せて、iOS Safari の date 入力が持つネイティブ既定の固有幅で右端が枠からはみ出す
+   のを防ぐため、外観をリセットして幅を親ボックス（border-box）に従わせる。 */
 .date-field {
   display: flex;
   align-items: center;
+  -webkit-appearance: none;
+  appearance: none;
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
 }
 .date-field::-webkit-date-and-time-value {
   text-align: left;
   margin: 0;
+  /* 値のテキストが右のパディングを越えて描画されないようにする */
+  min-width: 0;
+  max-width: 100%;
 }
+/* display:flex 化で内部要素はフレックスアイテムになる。既定の min-width:auto だと
+   欄幅より縮まずに右へあふれるため、縮小可＋はみ出し抑止を明示する。 */
 .date-field::-webkit-datetime-edit {
   line-height: 1.2;
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: 0;
+  overflow: hidden;
+}
+/* カレンダーアイコンは縮まずに欄の右端内側へ収める */
+.date-field::-webkit-calendar-picker-indicator {
+  flex: 0 0 auto;
+  margin: 0;
 }
