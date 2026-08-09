@@ -148,6 +148,38 @@ http://localhost:3000 を開きます。未ログインの場合は `/login` に
 
 > 週次レポートは画面（`/report` の「週次」タブ）でのみ確認でき、プッシュ通知は行いません。
 
+## 村（poporu-village）への集計提供
+
+家計の可視化のために、外部（ポポルの村）から**集計値だけ**を読み出す Edge Function `village-summary` を用意しています。
+
+**返すのは合計額と件数だけです。** 取引明細・カテゴリ名・メモ・目標名・目標 id は返しません。シークレットが漏れても出るのは合計額で、いつ何を買ったかは出ません。
+
+1. **Edge Function をデプロイ**：`supabase functions deploy village-summary`。
+   （呼び出し元は Supabase のセッションを持たないため、JWT 検証は `supabase/config.toml` の
+   `[functions.village-summary] verify_jwt = false` で無効にし、認証は下記のシークレットヘッダで行います）
+2. **secrets を設定**：
+   - `VILLAGE_FUNCTION_SECRET`：任意のランダム文字列。リマインダー用とは**別の値**にします。
+   - `VILLAGE_USER_ID`：集計対象のユーザー ID。未設定なら 500 で停止します（service role は RLS を迂回するため、全ユーザーを合計する経路は作りません）。
+     ```sql
+     select id from auth.users where email = 'you@example.com';
+     ```
+3. **呼び出し**（GET のみ。他のメソッドは 405）：
+   ```bash
+   curl -H "x-village-secret: $VILLAGE_FUNCTION_SECRET" \
+     https://<project-ref>.supabase.co/functions/v1/village-summary
+   ```
+
+返す内容：
+
+| キー | 中身 |
+|---|---|
+| `record` | 記録した日数・月数、直近30日の記録日数、最終記録日 |
+| `monthly` | 直近12ヶ月の収入・消費支出・貯金（古い順） |
+| `budget` | 当月の予算合計と消費支出、予算内に収めた月数 / 判定できた月数 |
+| `savings` | 貯蓄目標の件数・目標額合計・貯金済み合計 |
+
+集計の判断は `supabase/functions/_shared/` の純粋関数に置き、`tests/village-summary.test.ts` と `tests/village-guard.test.ts` で固定しています（Deno 側の `index.ts` は取得と受け渡しだけを行います）。予算や目標が未設定なら分母は `0` を返し、達成率を偽装しません。
+
 ## ディレクトリ構成
 
 ```
@@ -171,7 +203,8 @@ lib/
   format.ts          表示・日付ユーティリティ
 proxy.ts             セッション更新と未ログイン時リダイレクト（Next.js 16 の middleware 後継）
 supabase/migrations/ DB スキーマ・RLS・seed（SQL）
-supabase/functions/  Edge Function（send-reminders：Web Push 送信）
+supabase/functions/  Edge Function（send-reminders / send-monthly-report：Web Push 送信、village-summary：村への集計提供）
+supabase/functions/_shared/ Edge Function 共通の純粋関数（vitest でテスト）
 public/sw.js         Service Worker（Web Push 受信・通知表示）
 scripts/gen-icons.mjs PWA アイコン生成（依存なし）
 ```
