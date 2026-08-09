@@ -39,3 +39,6 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# claude code（マシンローカルの権限設定。.claude 全体は skills/agents 共有のため無視しない）
+.claude/settings.local.json
