@@ -180,6 +180,14 @@ http://localhost:3000 を開きます。未ログインの場合は `/login` に
 
 集計の判断は `supabase/functions/_shared/` の純粋関数に置き、`tests/village-summary.test.ts` と `tests/village-guard.test.ts` で固定しています（Deno 側の `index.ts` は取得と受け渡しだけを行います）。予算や目標が未設定なら分母は `0` を返し、達成率を偽装しません。
 
+デプロイ後の動作確認：
+
+```bash
+npm run check:village
+```
+
+ガード（401 / 405）とレスポンスの契約を21項目検証します。**金額は表示せず、合否・日付・件数だけを出す**ので、出力をそのまま共有できます。シークレットは隠し入力で受け取り、エンドポイント以外へ送りません（`VILLAGE_FUNCTION_SECRET` を環境変数で渡すことも可能）。
+
 ## ディレクトリ構成
 
 ```
