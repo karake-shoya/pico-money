@@ -190,6 +190,26 @@ npm run check:village
 
 ガード（401 / 405）とレスポンスの契約を21項目検証します。**金額は表示せず、合否・日付・件数だけを出す**ので、出力をそのまま共有できます。シークレットは隠し入力で受け取り、エンドポイント以外へ送りません（`VILLAGE_FUNCTION_SECRET` を環境変数で渡すことも可能）。
 
+## 検証コマンド
+
+```bash
+npx tsc --noEmit      # 型検査（Next 側。tsconfig の exclude により Edge Function は対象外）
+npm run lint          # ESLint
+npm run test          # vitest（純粋関数・集計ロジック）
+npm run check:functions  # Edge Function 3本の型検査（Deno）
+npm run check:village    # デプロイ済み village-summary の契約検証（21項目・要シークレット）
+```
+
+`check:functions` は `supabase/functions/*/index.ts` を Deno で型検査します。Edge Function は
+`tsconfig.json` の `exclude` に入っており、`tsc` にも `vitest` にもかからないため、入口の
+タイポや引数の食い違いはこのコマンドでしか検出できません。
+
+- Deno は devDependency（`deno` パッケージ）として入るので、別途インストールは不要です。
+- `--node-modules-dir=none` は必須です。付けないと Deno がこのリポの `node_modules` を
+  参照しに行き、`npm:web-push` を解決できずに失敗します（Edge Function の依存は
+  Deno 自身のキャッシュから解決させます）。
+- 依存のバージョンは `deno.lock` で固定しています。
+
 ## ディレクトリ構成
 
 ```

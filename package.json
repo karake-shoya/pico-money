@@ -9,7 +9,8 @@
     "lint": "eslint",
     "test": "vitest run",
     "test:watch": "vitest",
-    "check:village": "node scripts/check-village-summary.mjs"
+    "check:village": "node scripts/check-village-summary.mjs",
+    "check:functions": "deno check --node-modules-dir=none supabase/functions/*/index.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.105.0",
@@ -29,6 +30,7 @@
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "deno": "^2.9.5",
     "eslint": "^9",
     "eslint-config-next": "16.2.9",
     "tailwindcss": "^4",
