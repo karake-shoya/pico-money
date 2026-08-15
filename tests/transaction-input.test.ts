@@ -35,8 +35,10 @@ describe("parseTransactionInput", () => {
   });
 
   it("goal_id 未指定/空文字は null、指定時はその値を保持する", () => {
-    expect(parseTransactionInput(base).ok && parseTransactionInput(base).value.goal_id).toBeNull();
-    expect(parseTransactionInput({ ...base, goal_id: "  " }).ok && parseTransactionInput({ ...base, goal_id: "  " }).value.goal_id).toBeNull();
+    const unset = parseTransactionInput(base);
+    expect(unset.ok && unset.value.goal_id).toBeNull();
+    const blank = parseTransactionInput({ ...base, goal_id: "  " });
+    expect(blank.ok && blank.value.goal_id).toBeNull();
     const r = parseTransactionInput({ ...base, goal_id: "goal-99" });
     expect(r.ok && r.value.goal_id).toBe("goal-99");
   });

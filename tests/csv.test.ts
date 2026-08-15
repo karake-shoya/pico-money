@@ -25,6 +25,7 @@ function makeTx(
     amount: 850,
     memo: null,
     recurring_id: null,
+    goal_id: null,
     created_at: '2026-06-15T00:00:00Z',
     category: {
       id: 'cat-1',
