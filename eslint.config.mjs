@@ -12,6 +12,9 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // supabase start が生成する作業ディレクトリ（バンドル済みコードが入る）。
+    // supabase/.gitignore で git は無視するが eslint は見に行くため、ここでも外す。
+    "supabase/.temp/**",
   ]),
 ]);
 
