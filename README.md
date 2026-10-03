@@ -46,7 +46,7 @@ npm install
 ### 2. Supabase プロジェクトの準備
 
 1. [Supabase](https://supabase.com/) でプロジェクトを作成。
-2. SQL Editor で `supabase/migrations/` 配下を番号順（`0001` → `0011`）に実行
+2. SQL Editor で `supabase/migrations/` 配下を番号順（`0001` → `0012`）に実行
    （テーブル・RLS・GRANT・デフォルトカテゴリ seed が投入されます）。
    ⚠ `0011_grants.sql` を飛ばすと、新しい Supabase では全テーブルが
    `permission denied` になります（既定の権限付与に CRUD が含まれないため）。
@@ -249,7 +249,7 @@ scripts/gen-icons.mjs PWA アイコン生成（依存なし）
 - `savings_goals`：貯金の目標（名前・目標額・任意の期限）。本人のみ読み書き可能。
 - `transactions.goal_id`：目標への貯金（振替）の紐付け。専用「貯金」カテゴリ・`type='expense'` で記録する。目標削除時は SET NULL（取引は履歴として残る）。
 - RLS により、取引・予算・固定費・目標は `auth.uid()` 本人のみ読み書き可能。カテゴリは「共通＋自分定義」が閲覧でき、編集は自分定義のみ。
-- テーブル権限は `0011_grants.sql` で明示する。`authenticated`（画面）と `service_role`（Edge Function）へ CRUD を付与し、`anon` へは付与しない。**テーブルを追加したら、その migration にも GRANT を書く**（書き忘れると新規プロジェクトだけが `permission denied` で落ちる）。
+- テーブル権限は `0011_grants.sql` で明示する。`authenticated`（画面）と `service_role`（Edge Function）へ CRUD を付与し、`anon` へは付与しない。既存プロジェクトに残っていた `anon` の権限は `0012_revoke_anon_grants.sql` で外す。**テーブルを追加したら、その migration にも GRANT と `anon` からの revoke を書く**（GRANT を書き忘れると新規プロジェクトだけが `permission denied` で落ちる。revoke を書き忘れると、既定の権限付与で `anon` に全権限が付く）。
 
 ### 貯金（目標）の集計方針
 
